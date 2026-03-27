@@ -185,8 +185,9 @@ export default function Home() {
     setMessage("Acionando o robô de automação...");
     setFileUrl(null);
 
+    const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
       const res = await fetch(`${baseUrl}/run-robot?data=${date}`, {
         method: "POST"
       });
@@ -208,7 +209,7 @@ export default function Home() {
     } catch (err) {
       console.error("Erro ao disparar robô", err);
       setStatus("error");
-      setMessage("Erro de conexão. O servidor de automação local (localhost:8000) está ativo?");
+      setMessage(`Erro de conexão. O servidor de automação (${baseUrl}) está ativo?`);
     }
   };
 
