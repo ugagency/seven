@@ -34,9 +34,7 @@ export default function Home() {
   const router = useRouter();
   const supabase = createClient();
 
-  const N8N_URL = "https://automacoes-n8n.infrassys.com/webhook-test/seven";
-
-  const loadHistory = async () => {
+  const loadHistory = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .storage
@@ -60,7 +58,7 @@ export default function Home() {
     } catch (e) {
       console.error("Erro ao carregar histórico", e);
     }
-  };
+  }, [supabase]);
 
   const deleteFile = async (name: string, e: React.MouseEvent) => {
     e.preventDefault();
@@ -82,7 +80,7 @@ export default function Home() {
   };
 
   const fetchSettings = useCallback(async (uid: string) => {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('user_settings')
       .select('vale_email, vale_password')
       .eq('user_id', uid)
@@ -123,10 +121,10 @@ export default function Home() {
         },
         async (payload) => {
           console.log('Novo arquivo detectado no Storage:', payload.new.name);
-          
+
           // Pequeno delay para garantir que o Supabase processou o objeto
           setTimeout(loadHistory, 1000);
-          
+
           // Opcional: Notificar o usuário se ele estiver com o status "loading"
           setStatus(currentStatus => {
             if (currentStatus === "loading") {
@@ -144,7 +142,7 @@ export default function Home() {
       supabase.removeChannel(channel);
     };
     // --- REALTIME SUBSCRIPTION END ---
-  }, [router, supabase, fetchSettings]);
+  }, [router, supabase, fetchSettings, loadHistory]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -184,41 +182,33 @@ export default function Home() {
 
     setStatus("loading");
     setProgress(10);
-    setMessage("Enviando solicitação para o n8n...");
+    setMessage("Acionando o robô de automação...");
     setFileUrl(null);
 
     try {
-      const payload = {
-        date,
-        vale_email: valeEmail,
-        vale_pass: valePassword,
-        user_id: userId,
-        user_email: userEmail,
-        timestamp: new Date().toISOString()
-      };
-
-      const res = await fetch("/api/start-n8n", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+      const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+      const res = await fetch(`${baseUrl}/run-robot?data=${date}`, {
+        method: "POST"
       });
 
+      const data = await res.json();
+
       if (res.ok) {
-        // Como o n8n é assíncrono agora, avisamos o usuário que está em fila
         setProgress(100);
         setStatus("success");
-        setMessage("Solicitação enviada com sucesso! O robô Airtop iniciou no servidor. Verifique o histórico em instantes.");
+        setMessage(data.message || "Robô iniciado com sucesso! O arquivo aparecerá no histórico em alguns instantes.");
 
-        // Dá um pequeno delay e atualiza o histórico algumas vezes
+        // Atualiza o histórico após um tempo para detectar o novo arquivo no Supabase
         setTimeout(loadHistory, 10000);
-        setTimeout(loadHistory, 30000);
+        setTimeout(loadHistory, 60000); // 1 minuto depois por garantia
       } else {
         setStatus("error");
-        setMessage("Erro ao comunicar com o n8n. Verifique o webhook.");
+        setMessage(data.detail || "Erro ao iniciar o robô. Verifique se o backend está rodando.");
       }
     } catch (err) {
+      console.error("Erro ao disparar robô", err);
       setStatus("error");
-      setMessage("Erro de conexão. Verifique se o n8n está acessível.");
+      setMessage("Erro de conexão. O servidor de automação local (localhost:8000) está ativo?");
     }
   };
 

@@ -34,8 +34,9 @@ export default function Login() {
                 if (error) throw error;
                 router.push("/");
             }
-        } catch (err: any) {
-            setError(err.message || "Ocorreu um erro ao autenticar.");
+        } catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : "Ocorreu um erro ao autenticar.";
+            setError(errorMessage);
         } finally {
             setIsLoading(false);
         }
