@@ -2,9 +2,25 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Loader2, Download, AlertCircle, CheckCircle2, LogOut, Settings, X, Lock, Mail, FileSpreadsheet, Trash2 } from "lucide-react";
+import { Play, Loader2, Download, AlertCircle, CheckCircle2, LogOut, FileSpreadsheet, Trash2 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
+import GerenciadorCredenciais from "./GerenciadorCredenciais";
+
+interface ContaCoupa {
+  id: string;
+  nome: string;
+}
+
+interface EstadoRobo {
+  executando: boolean;
+  conta: string | null;
+  data: string | null;
+  inicio: string | null;
+  ultima_execucao: { data: string; fim: string; resultados: Record<string, string> } | null;
+}
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
 interface HistoryFile {
   name: string;
@@ -16,23 +32,34 @@ export default function Home() {
   const [date, setDate] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
-  const [progress, setProgress] = useState(0); // Para a barra evolutiva
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
-
-  // Settings Modal State
-  const [showSettings, setShowSettings] = useState(false);
-  const [valeEmail, setValeEmail] = useState("");
-  const [valePassword, setValePassword] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
-  const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const [estado, setEstado] = useState<EstadoRobo | null>(null);
+  const [statusSupported, setStatusSupported] = useState(false);
 
   // History State
   const [history, setHistory] = useState<HistoryFile[]>([]);
 
+  // Contas Coupa (uma por CNPJ/filial), configuradas no servidor
+  const [contas, setContas] = useState<ContaCoupa[]>([]);
+  const [conta, setConta] = useState("");
+  const [contaPadrao, setContaPadrao] = useState<string | null>(null);
+
+  // Desligado (padrão): eventos que já vieram em capturas anteriores são pulados.
+  // Ligado: o robô traz tudo de novo para a data, inclusive o que já foi capturado.
+  const [incluirJaCapturados, setIncluirJaCapturados] = useState(false);
+
+  // Gerenciador de credenciais: só aparece para administradores (decidido pelo backend em /eu)
+  const [podeGerenciarCredenciais, setPodeGerenciarCredenciais] = useState(false);
+  const [credenciaisAbertas, setCredenciaisAbertas] = useState(false);
+
   const router = useRouter();
-  const supabase = createClient();
+  const [supabase] = useState(() => createClient());
+
+  const obterToken = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token ?? null;
+  }, [supabase]);
 
   const loadHistory = useCallback(async () => {
     try {
@@ -40,7 +67,7 @@ export default function Home() {
         .storage
         .from('planilhas')
         .list('', {
-          limit: 5,
+          limit: 12,
           offset: 0,
           sortBy: { column: 'created_at', order: 'desc' },
         });
@@ -79,20 +106,6 @@ export default function Home() {
     }
   };
 
-  const fetchSettings = useCallback(async (uid: string) => {
-    const { data } = await supabase
-      .from('user_settings')
-      .select('vale_email, vale_password')
-      .eq('user_id', uid)
-      .single();
-
-    if (data) {
-      setValeEmail(data.vale_email || "");
-      setValePassword(data.vale_password || "");
-    }
-    setSettingsLoaded(true);
-  }, [supabase]);
-
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -100,8 +113,6 @@ export default function Home() {
         router.push("/login");
       } else {
         setUserEmail(session.user.email ?? "Usuário");
-        setUserId(session.user.id);
-        fetchSettings(session.user.id);
         loadHistory();
       }
     };
@@ -119,21 +130,10 @@ export default function Home() {
           table: 'objects',
           filter: `bucket_id=eq.planilhas`
         },
-        async (payload) => {
-          console.log('Novo arquivo detectado no Storage:', payload.new.name);
-
-          // Pequeno delay para garantir que o Supabase processou o objeto
+        async () => {
+          // Novo arquivo no Storage: só atualiza o histórico. Quem decide que o robô
+          // terminou é /status, porque "todas as filiais" gera mais de um arquivo.
           setTimeout(loadHistory, 1000);
-
-          // Opcional: Notificar o usuário se ele estiver com o status "loading"
-          setStatus(currentStatus => {
-            if (currentStatus === "loading") {
-              setMessage(`Robô finalizou! Arquivo "${payload.new.name}" pronto.`);
-              setProgress(100);
-              return "success";
-            }
-            return currentStatus;
-          });
         }
       )
       .subscribe();
@@ -142,37 +142,122 @@ export default function Home() {
       supabase.removeChannel(channel);
     };
     // --- REALTIME SUBSCRIPTION END ---
-  }, [router, supabase, fetchSettings, loadHistory]);
+  }, [router, supabase, loadHistory]);
+
+  // Backend antigo não tem /contas nem /status: nesse caso o seletor não aparece
+  // e a tela se comporta como antes. Relido depois de salvar credenciais, porque
+  // uma filial sem senha só passa a aparecer quando fica pronta.
+  const carregarContas = useCallback(() => {
+    fetch(`${BACKEND_URL}/contas`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.contas?.length) {
+          const lista: ContaCoupa[] = data.contas;
+          setContas(lista);
+          setConta((atual) => (atual === "todas" || lista.some((c) => c.id === atual) ? atual : data.padrao || lista[0].id));
+          setContaPadrao(data.padrao || lista[0].id);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    // Backend antigo não tem /eu: o botão de credenciais simplesmente não aparece.
+    (async () => {
+      try {
+        const token = await obterToken();
+        if (!token) return;
+        const res = await fetch(`${BACKEND_URL}/eu`, { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) return;
+        const eu = await res.json();
+        setPodeGerenciarCredenciais(Boolean(eu?.admin));
+      } catch {
+        // sem acesso ao backend: segue sem o gerenciador
+      }
+    })();
+  }, [obterToken]);
+
+  useEffect(() => {
+    carregarContas();
+
+    // Se o robô já estiver rodando (outra pessoa disparou, ou a página foi recarregada), mostra.
+    fetch(`${BACKEND_URL}/status`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((s: EstadoRobo | null) => {
+        if (!s) return;
+        setStatusSupported(true);
+        setEstado(s);
+        if (s.executando) setStatus("loading");
+      })
+      .catch(() => {});
+  }, [carregarContas]);
+
+  // Acompanha o robô enquanto ele roda e fecha o resultado por conta.
+  useEffect(() => {
+    if (status !== "loading" || !statusSupported) return;
+    let ativo = true;
+    const nome = (id: string) =>
+      id === "todas" ? "Planilha unificada" : contas.find((c) => c.id === id)?.nome ?? id;
+
+    const tick = async () => {
+      try {
+        const res = await fetch(`${BACKEND_URL}/status`);
+        if (!res.ok || !ativo) return;
+        const s: EstadoRobo = await res.json();
+        if (!ativo) return;
+        setEstado(s);
+        if (s.executando) return;
+
+        const resultados = Object.entries(s.ultima_execucao?.resultados ?? {});
+        const falhas = resultados.filter(([, r]) => r !== "ok");
+        if (falhas.length === 0) {
+          setStatus("success");
+          setMessage(
+            resultados.length > 1
+              ? `Concluído: ${resultados.map(([id]) => nome(id)).join(" e ")}. A planilha única, sem repetição entre filiais, está no histórico.`
+              : `Concluído: ${resultados.map(([id]) => nome(id)).join("")}. A planilha está no histórico.`
+          );
+        } else {
+          setStatus("error");
+          setMessage(falhas.map(([id, r]) => `${nome(id)}: ${r.replace(/^erro:\s*/, "")}`).join(" | "));
+        }
+        loadHistory();
+      } catch {
+        // falha de rede momentânea: tenta de novo no próximo ciclo
+      }
+    };
+
+    tick();
+    const t = setInterval(tick, 5000);
+    return () => {
+      ativo = false;
+      clearInterval(t);
+    };
+  }, [status, statusSupported, contas, loadHistory]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push("/login");
   };
 
-  const saveSettings = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!userId) return;
-    setIsSaving(true);
+  const formatarDDMMAA = (d: Date) =>
+    `${String(d.getDate()).padStart(2, "0")}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getFullYear()).slice(-2)}`;
 
-    const { error } = await supabase
-      .from('user_settings')
-      .upsert({ user_id: userId, vale_email: valeEmail, vale_password: valePassword });
+  const nomeConta = (id: string | null) =>
+    id === "todas" ? "Todas as filiais" : contas.find((c) => c.id === id)?.nome ?? id ?? "";
 
-    setIsSaving(false);
-    if (!error) {
-      setShowSettings(false);
-    } else {
-      alert("Erro ao salvar no banco. Verifique se a tabela foi criada no Supabase.");
-    }
+  // Nome do arquivo: eventos_[conta_]DDMMAA_timestamp.xlsx (a conta padrão não leva id)
+  const descreverArquivo = (name: string) => {
+    const m = name.match(/^eventos_(?:([a-z0-9_-]+)_)?(\d{2})(\d{2})(\d{2})_\d+\.xlsx$/);
+    if (!m) return { filial: null as string | null, dataEvento: null as string | null };
+    return {
+      filial: nomeConta(m[1] ?? contaPadrao),
+      dataEvento: `${m[2]}/${m[3]}/${m[4]}`,
+    };
   };
 
   const startExtraction = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!valeEmail || !valePassword) {
-      setShowSettings(true);
-      return;
-    }
 
     if (date.length !== 6) {
       setStatus("error");
@@ -181,27 +266,30 @@ export default function Home() {
     }
 
     setStatus("loading");
-    setProgress(10);
     setMessage("Acionando o robô de automação...");
     setFileUrl(null);
 
-    const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+    const params = new URLSearchParams({ data: date });
+    if (conta) params.set("conta", conta);
+    if (incluirJaCapturados) params.set("pular_verificacao_duplicados", "true");
 
     try {
-      const res = await fetch(`${baseUrl}/run-robot?data=${date}`, {
+      const res = await fetch(`${BACKEND_URL}/run-robot?${params.toString()}`, {
         method: "POST"
       });
 
       const data = await res.json();
 
       if (res.ok) {
-        setProgress(100);
-        setStatus("success");
-        setMessage(data.message || "Robô iniciado com sucesso! O arquivo aparecerá no histórico em alguns instantes.");
-
-        // Atualiza o histórico após um tempo para detectar o novo arquivo no Supabase
-        setTimeout(loadHistory, 10000);
-        setTimeout(loadHistory, 60000); // 1 minuto depois por garantia
+        if (statusSupported) {
+          // O andamento e o fim vêm de /status (efeito de acompanhamento acima)
+          setEstado({ executando: true, conta: data.contas?.[0] ?? null, data: date, inicio: null, ultima_execucao: null });
+        } else {
+          setStatus("success");
+          setMessage(data.message || "Robô iniciado com sucesso! O arquivo aparecerá no histórico em alguns instantes.");
+          setTimeout(loadHistory, 10000);
+          setTimeout(loadHistory, 60000); // 1 minuto depois por garantia
+        }
       } else {
         setStatus("error");
         setMessage(data.detail || "Erro ao iniciar o robô. Verifique se o backend está rodando.");
@@ -209,11 +297,11 @@ export default function Home() {
     } catch (err) {
       console.error("Erro ao disparar robô", err);
       setStatus("error");
-      setMessage(`Erro de conexão. O servidor de automação (${baseUrl}) está ativo?`);
+      setMessage(`Erro de conexão. O servidor de automação (${BACKEND_URL}) está ativo?`);
     }
   };
 
-  if (!userEmail || !settingsLoaded) {
+  if (!userEmail) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
@@ -228,97 +316,21 @@ export default function Home() {
       <div className="w-full flex justify-between items-center px-8 py-4 bg-white border-b border-gray-100">
         <div className="flex-1"></div>
         <div className="flex items-center space-x-4">
+          {podeGerenciarCredenciais && (
+            <button
+              onClick={() => setCredenciaisAbertas(true)}
+              className="text-sm font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50 rounded-xl px-3 py-1.5 transition-all active:scale-95"
+            >
+              Credenciais
+            </button>
+          )}
           <span className="text-sm font-semibold text-gray-600">{userEmail}</span>
-          <button onClick={() => setShowSettings(!showSettings)} className="p-2 border border-gray-200 text-gray-500 hover:bg-gray-50 rounded-xl transition-all active:scale-95" title="Configurar Credenciais Vale">
-            <Settings className="w-4 h-4" />
-          </button>
           <button onClick={handleLogout} className="p-2 border border-gray-200 text-red-500 hover:bg-red-50 hover:border-red-100 rounded-xl transition-all active:scale-95" title="Sair">
             <LogOut className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      {/* Settings Modal Overlay */}
-      <AnimatePresence>
-        {showSettings && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/30 backdrop-blur-sm p-4"
-          >
-            <motion.div
-              initial={{ scale: 0.95, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.95, y: 20 }}
-              className="w-full max-w-sm bg-white rounded-[2rem] p-8 shadow-2xl relative"
-            >
-              <button
-                onClick={() => setShowSettings(false)}
-                className="absolute top-6 right-6 p-2 bg-gray-50 text-gray-400 hover:text-gray-600 rounded-full transition-colors"
-                disabled={isSaving}
-              >
-                <X className="w-5 h-5" />
-              </button>
-
-              <div className="mb-6">
-                <h2 className="text-xl font-bold text-gray-800">Cofre de Credenciais</h2>
-                <p className="text-sm text-gray-500 mt-1">Armazenadas no Supabase de forma segura.</p>
-              </div>
-
-              <form onSubmit={saveSettings} className="space-y-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">E-mail (Vale)</label>
-                  <div className="relative group">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <Mail className="h-4 w-4 text-gray-400" />
-                    </div>
-                    <input
-                      type="email"
-                      required
-                      placeholder="email@sevensuprimentos..."
-                      className="w-full bg-gray-50 border border-gray-200 rounded-2xl pl-10 pr-4 py-3 text-gray-800 focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500/50 transition-all text-sm"
-                      value={valeEmail}
-                      disabled={isSaving}
-                      onChange={(e) => setValeEmail(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Senha (Vale)</label>
-                  <div className="relative group">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <Lock className="h-4 w-4 text-gray-400" />
-                    </div>
-                    <input
-                      type="password"
-                      required
-                      placeholder="••••••••"
-                      className="w-full bg-gray-50 border border-gray-200 rounded-2xl pl-10 pr-4 py-3 text-gray-800 focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500/50 transition-all text-sm"
-                      value={valePassword}
-                      disabled={isSaving}
-                      onChange={(e) => setValePassword(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="w-full mt-2 bg-emerald-600 text-white rounded-2xl py-3 flex items-center justify-center space-x-2 font-semibold hover:bg-emerald-700 transition-colors shadow-lg active:scale-95 disabled:opacity-70"
-                >
-                  {isSaving ? (
-                    <Loader2 className="w-5 h-5 text-white animate-spin" />
-                  ) : (
-                    "Guardar no Cofre"
-                  )}
-                </button>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <div className="flex-1 flex flex-col md:flex-row items-start justify-center p-4 sm:p-8 gap-8 max-w-6xl mx-auto w-full">
 
@@ -337,6 +349,26 @@ export default function Home() {
             </div>
 
             <form onSubmit={startExtraction} className="space-y-6">
+              {contas.length > 1 && (
+                <div className="space-y-2">
+                  <label htmlFor="conta" className="text-xs font-bold text-gray-400 ml-1 uppercase tracking-wider">
+                    Filial (conta Coupa)
+                  </label>
+                  <select
+                    id="conta"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 text-gray-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500/50 transition-all"
+                    value={conta}
+                    onChange={(e) => setConta(e.target.value)}
+                    disabled={status === "loading"}
+                  >
+                    {contas.map((c) => (
+                      <option key={c.id} value={c.id}>{c.nome}</option>
+                    ))}
+                    <option value="todas">Todas as filiais (uma depois da outra)</option>
+                  </select>
+                </div>
+              )}
+
               <div className="space-y-2">
                 <label htmlFor="date" className="text-xs font-bold text-gray-400 ml-1 uppercase tracking-wider">
                   Data do Evento
@@ -353,6 +385,53 @@ export default function Home() {
                     disabled={status === "loading"}
                   />
                 </div>
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    disabled={status === "loading"}
+                    onClick={() => setDate(formatarDDMMAA(new Date()))}
+                    className="text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 rounded-lg px-3 py-1.5 transition-colors disabled:opacity-50"
+                  >
+                    Hoje
+                  </button>
+                  <button
+                    type="button"
+                    disabled={status === "loading"}
+                    onClick={() => {
+                      const d = new Date();
+                      d.setDate(d.getDate() - 1);
+                      setDate(formatarDDMMAA(d));
+                    }}
+                    className="text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 rounded-lg px-3 py-1.5 transition-colors disabled:opacity-50"
+                  >
+                    Ontem
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-start justify-between gap-4 bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4">
+                <div>
+                  <p id="rotulo-ja-capturados" className="text-sm font-semibold text-gray-700">Incluir eventos já capturados</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {incluirJaCapturados
+                      ? "Ligado: traz todos os eventos da data, inclusive os que já vieram em capturas anteriores."
+                      : "Desligado: pula os eventos que já vieram em capturas anteriores."}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={incluirJaCapturados}
+                  aria-labelledby="rotulo-ja-capturados"
+                  disabled={status === "loading"}
+                  onClick={() => setIncluirJaCapturados((v) => !v)}
+                  className={`relative shrink-0 w-12 h-7 rounded-full transition-colors disabled:opacity-50 ${incluirJaCapturados ? "bg-emerald-600" : "bg-gray-300"}`}
+                >
+                  <span
+                    className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${incluirJaCapturados ? "translate-x-5" : ""}`}
+                  />
+                  <span className="sr-only">{incluirJaCapturados ? "Ligado" : "Desligado"}</span>
+                </button>
               </div>
 
               <button
@@ -394,10 +473,7 @@ export default function Home() {
                     {/* Barra de Progresso Visível apenas enquanto carrega */}
                     {status === "loading" && (
                       <div className="absolute bottom-0 left-0 h-1 bg-blue-200 w-full rounded-b-2xl overflow-hidden">
-                        <div
-                          className="h-full bg-blue-500 transition-all duration-500 ease-out"
-                          style={{ width: `${progress}%` }}
-                        />
+                        <div className="h-full w-full bg-blue-500 animate-pulse" />
                       </div>
                     )}
 
@@ -407,12 +483,15 @@ export default function Home() {
                       {status === "loading" && <Loader2 className="w-5 h-5 shrink-0 animate-spin mt-0.5" />}
 
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold leading-relaxed break-words">{message}</p>
+                        <p className="font-semibold leading-relaxed break-words">
+                          {status === "loading" && estado?.executando && estado.conta
+                            ? `Robô em execução: ${nomeConta(estado.conta)}`
+                            : message}
+                        </p>
 
-                        {/* Status de Loading em Porcentagem Textual */}
                         {status === "loading" && (
-                          <p className="text-xs text-blue-500/80 font-bold mt-1 tracking-wider uppercase">
-                            {progress}% Concluído
+                          <p className="text-xs text-blue-500/80 mt-1">
+                            Pode levar alguns minutos. Você pode sair desta tela, o robô continua rodando.
                           </p>
                         )}
 
@@ -470,9 +549,18 @@ export default function Home() {
                       <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
                     </div>
                     <div className="min-w-0 pr-16 bg-white z-10 w-full" onClick={(e) => { e.stopPropagation(); window.open(file.url, '_blank'); }}>
-                      <p className="text-sm font-bold text-gray-800 truncate">{file.name}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {file.created_at ? new Date(file.created_at).toLocaleString("pt-BR") : "Sem data"}
+                      <p className="text-sm font-bold text-gray-800 truncate" title={file.name}>
+                        {descreverArquivo(file.name).dataEvento
+                          ? `Eventos de ${descreverArquivo(file.name).dataEvento}`
+                          : file.name}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-2">
+                        {contas.length > 1 && descreverArquivo(file.name).filial && (
+                          <span className="bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-md px-1.5 py-0.5 font-semibold">
+                            {descreverArquivo(file.name).filial}
+                          </span>
+                        )}
+                        <span>{file.created_at ? new Date(file.created_at).toLocaleString("pt-BR") : "Sem data"}</span>
                       </p>
                     </div>
                   </div>
@@ -496,6 +584,15 @@ export default function Home() {
         </motion.div>
 
       </div>
+
+      {credenciaisAbertas && (
+        <GerenciadorCredenciais
+          backendUrl={BACKEND_URL}
+          obterToken={obterToken}
+          onFechar={() => setCredenciaisAbertas(false)}
+          onSalvo={carregarContas}
+        />
+      )}
     </div>
   );
 }
