@@ -119,7 +119,7 @@ export default function Home() {
     checkUser();
 
     // --- REALTIME SUBSCRIPTION START ---
-    // Escuta novos arquivos sendo inseridos no storage do Supabase pelo n8n
+    // Escuta novos arquivos sendo inseridos no storage do Supabase
     const channel = supabase
       .channel('realtime-storage-updates')
       .on(
