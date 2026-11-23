@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
-import { ABAS, ANDAMENTOS, Aviso, Botao, Campo, Cartao, Etiqueta, Estado, NIVEIS, api, campoCls, fmtData, fmtDataHora, fmtNum, fmtReais, td, textoPrazo, th, tomAndamento, tomNivel, useAcao, useApi, useEu, type J } from "../../_lib";
+import { ArrowLeft, ExternalLink, Mail, Search } from "lucide-react";
+import { ANDAMENTOS, Aviso, Botao, Campo, Cartao, Etiqueta, EtiquetaAba, Estado, NIVEIS, Rotulo, api, campoCls, diasAte, fmtData, fmtDataHora, fmtNum, fmtReais, td, textoPrazo, th, theadCls, tomAndamento, tomNivel, useAcao, useApi, useEu, type J } from "../../_lib";
 
 const ALERTAS: Record<string, string> = {
   parece_total: "Parece valor total, não unitário",
@@ -21,10 +22,10 @@ function Valores({ v }: { v: J }) {
     "preco_venda" in v && ["Venda", fmtReais(v.preco_venda)],
     "margem_pct" in v && v.margem_pct != null && ["Margem", `${fmtNum(v.margem_pct, 1)}%`],
   ].filter(Boolean) as string[][];
-  if (!partes.length) return <span className="text-slate-400">valores não visíveis para o seu perfil</span>;
+  if (!partes.length) return <span className="text-[#8A94A0]">valores não visíveis para o seu perfil</span>;
   return (
     <span className="flex flex-wrap gap-x-4 gap-y-0.5 tabular-nums">
-      {partes.map(([k, val]) => <span key={k}><span className="text-xs text-slate-500">{k}</span> {val || "–"}</span>)}
+      {partes.map(([k, val]) => <span key={k}><span className="text-[12px] text-[#5A6573]">{k}</span> {val || "–"}</span>)}
     </span>
   );
 }
@@ -79,22 +80,38 @@ export default function Ficha() {
       setEmail(null); sol.recarregar();
     });
 
-  return (
-    <div className="space-y-4">
-      <nav className="text-sm"><Link href="/os" className="text-indigo-700 hover:underline">Fila</Link> <span className="text-slate-400">/</span> <span className="text-slate-600">Evento {item.numero_evento}</span></nav>
-      {acao.erro && <Aviso tom="ruim">{acao.erro}</Aviso>}
+  const unidade = (item.unidade || "").split("-")[0].toLowerCase();
+  const dPrazo = diasAte(item.prazo);
+  const urgente = !item.expirado && dPrazo !== null && dPrazo <= 2;
+  const margemPrevia = (() => {
+    const c = numero(nova.preco_compra), v = numero(nova.preco_venda);
+    if (!eu.pode("margem.ver") || c == null || v == null || !v) return null;
+    const custo = c * (1 + (numero(nova.ipi) || 0) / 100) + (numero(nova.frete) || 0);
+    return ((v - custo) / v) * 100;
+  })();
 
-      <Cartao>
+  return (
+    <div>
+      <Link href="/os" className="inline-flex items-center gap-2 text-[14px] font-semibold text-[#00756D] hover:underline"><ArrowLeft className="h-4 w-4" aria-hidden /> Fila de cotações</Link>
+
+      <div className="mt-4 border-b-2 border-[#0B1A2A] pb-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
-            <h1 className="text-xl font-semibold tracking-tight text-slate-900">{produto.nome}</h1>
-            <p className="mt-0.5 text-sm text-slate-600">{[produto.fabricante, produto.referencia].filter(Boolean).join(" · ") || "Sem marca ou referência identificada"}</p>
-            <div className="mt-2 flex flex-wrap gap-1">
-              <Etiqueta tom={item.expirado ? "ruim" : tomAndamento(item.andamento)}>{item.expirado ? "Expirada" : ANDAMENTOS[item.andamento]}</Etiqueta>
-              <Etiqueta>{ABAS[item.aba]}</Etiqueta>
-              <Etiqueta tom={tomNivel(produto.nivel)}>Identificação: {NIVEIS[produto.nivel]}</Etiqueta>
-              {item.responsavel && <Etiqueta tom="info">Em cotação por {item.responsavel}</Etiqueta>}
+            <h1 className="text-[28px] font-extrabold leading-tight tracking-[-0.01em]">
+              {produto.nome}{" "}
+              {(produto.fabricante || produto.referencia) && <span className="mono align-middle text-[16px] font-normal text-[#334255]">{[produto.fabricante, produto.referencia].filter(Boolean).join(" / ")}</span>}
+            </h1>
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-[14px]">
+              <Etiqueta tom={tomNivel(produto.nivel)}>Identidade: {NIVEIS[produto.nivel].toLowerCase()}</Etiqueta>
+              {d.codigos.slice(0, 3).map((c: J) => <Etiqueta key={c.codigo} tom="contorno" mono>{c.codigo}</Etiqueta>)}
+              {d.codigos.length > 3 && <Etiqueta tom="contorno">+{d.codigos.length - 3} códigos</Etiqueta>}
+              <Etiqueta>{d.ocorrencias} ocorrência{d.ocorrencias > 1 ? "s" : ""}</Etiqueta>
+              {item.expirado ? <Etiqueta tom="ruim">Expirada</Etiqueta> : item.andamento !== "a_cotar" ? <Etiqueta tom={tomAndamento(item.andamento)}>{ANDAMENTOS[item.andamento]}</Etiqueta> : <EtiquetaAba aba={item.aba} />}
+              <span className="text-[#334255]">
+                {item.uf || "UF não informada"} · {fmtNum(item.quantidade)} {unidade} · encerra <span className={`font-semibold ${urgente || item.expirado ? "text-[#B42318]" : ""}`}>{fmtData(item.prazo)}</span> ({textoPrazo(item.prazo)})
+              </span>
             </div>
+            <p className="mt-2 text-[13px] text-[#5A6573]">Evento {item.numero_evento} · {d.contas.map((c: J) => c.nome).join(" e ")}{item.linhas > 1 && ` · ${item.linhas} linhas deste produto no evento (quantidade somada)`}{item.responsavel && ` · em cotação por ${item.responsavel}`}</p>
           </div>
           {podeCotar && (
             <div className="flex flex-wrap gap-2">
@@ -106,140 +123,200 @@ export default function Ficha() {
           )}
         </div>
         {declinando && (
-          <form onSubmit={(e) => { e.preventDefault(); andamento("declinada", motivo); }} className="mt-3 flex flex-wrap items-end gap-2 rounded-lg bg-slate-50 p-3">
+          <form onSubmit={(e) => { e.preventDefault(); andamento("declinada", motivo); }} className="mt-4 flex flex-wrap items-end gap-2 border border-[#DCE0E5] bg-white p-4">
             <div className="min-w-64 flex-1"><Campo rotulo="Motivo do declínio (fica guardado para análise)"><input autoFocus required className={campoCls} value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Ex.: sem fornecedor, prazo curto, fora do portfólio" /></Campo></div>
             <Botao type="submit" variante="perigo" disabled={acao.ocupado}>Confirmar declínio</Botao>
           </form>
         )}
-        <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 text-sm md:grid-cols-4 xl:grid-cols-6">
-          {[
-            ["Evento", item.numero_evento],
-            ["Quantidade", `${fmtNum(item.quantidade)} ${(item.unidade || "").split("-")[0]}`],
-            ["Encerramento", `${fmtData(item.prazo)} (${textoPrazo(item.prazo)})`],
-            ["UF", item.uf || "não informada"],
-            ["Aparições do produto", fmtNum(d.ocorrencias)],
-            ["CNPJs", d.contas.map((c: J) => c.nome).join(", ")],
-          ].map(([k, v]) => (<div key={k}><dt className="text-xs text-slate-500">{k}</dt><dd className="font-medium text-slate-900">{v}</dd></div>))}
-        </dl>
-        {produto.descricao && <p className="mt-4 border-t border-slate-100 pt-3 text-sm leading-relaxed text-slate-700">{produto.descricao}</p>}
-        {item.linhas > 1 && <p className="mt-2 text-xs text-slate-500">{item.linhas} linhas deste produto no mesmo evento; a quantidade acima é a soma.</p>}
-        {d.linhas[0]?.link_evento && <a href={d.linhas[0].link_evento} target="_blank" rel="noreferrer" className="mt-2 inline-block text-sm font-medium text-indigo-700 hover:underline">Abrir o evento no Coupa</a>}
-      </Cartao>
+        {produto.descricao && <p className="mono mt-4 text-[12.5px] leading-relaxed text-[#334255]">{produto.descricao}</p>}
+        {d.linhas[0]?.link_evento && <a href={d.linhas[0].link_evento} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1.5 text-[14px] font-semibold text-[#00756D] hover:underline"><ExternalLink className="h-4 w-4" aria-hidden /> Abrir o evento no Coupa</a>}
+      </div>
+      {acao.erro && <div className="mt-4"><Aviso tom="ruim">{acao.erro}</Aviso></div>}
 
-      <div className="grid gap-4 xl:grid-cols-2">
-        <Cartao titulo="Fornecedores do produto">
-          <Estado erro={forn.erro} carregando={forn.carregando && !forn.dados}>
-            {forn.dados?.vinculados.length ? (
-              <ul className="divide-y divide-slate-100">
-                {forn.dados.vinculados.map((f: J) => (
-                  <li key={f.id} className="flex flex-wrap items-start justify-between gap-2 py-2 first:pt-0">
-                    <div className="text-sm">
-                      <div className="font-medium text-slate-900">{f.nome} <span className="font-normal text-slate-500">{[f.cidade, f.uf].filter(Boolean).join("/")}</span></div>
-                      <div className="text-xs text-slate-500">{[f.contato, f.telefone, f.email].filter(Boolean).join(" · ") || "sem contato cadastrado"}</div>
-                      <div className="mt-0.5 text-xs text-slate-500">
-                        Origem: {ORIGENS[f.origem] || f.origem}
-                        {"ultimo_preco" in f && (f.ultimo_preco != null ? <> · último preço {fmtReais(f.ultimo_preco)} em {fmtData(f.ultimo_preco_em)}</> : " · sem preço registrado")}
-                        {f.ganhas > 0 && ` · ${f.ganhas} cotação(ões) ganha(s)`}
+      <div className="mt-6 grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_440px]">
+        <div className="space-y-5">
+          <Cartao titulo="Fornecedores deste produto" sub={`${forn.dados?.vinculados.length ?? 0} vinculado${(forn.dados?.vinculados.length ?? 0) === 1 ? "" : "s"}`}>
+            <Estado erro={forn.erro} carregando={forn.carregando && !forn.dados}>
+              {forn.dados?.vinculados.length ? (
+                <div className="space-y-4">
+                  {forn.dados.vinculados.map((f: J) => (
+                    <div key={f.id} className="border border-[#DCE0E5] border-t-2 border-t-[#0B1A2A] p-4">
+                      <div className="text-[16px] font-bold">{f.nome}</div>
+                      <div className="text-[13px] text-[#5A6573]">{[[f.cidade, f.uf].filter(Boolean).join(" · "), f.contato, f.telefone, f.email].filter(Boolean).join(" · ") || "sem contato cadastrado"}</div>
+                      <div className="mt-3 grid grid-cols-2 gap-4 border-y border-[#E6E9ED] py-3">
+                        <div>
+                          <Rotulo>Último preço</Rotulo>
+                          {"ultimo_preco" in f ? (f.ultimo_preco != null
+                            ? <><div className="mt-1 text-[17px] font-bold tabular-nums">{fmtReais(f.ultimo_preco)}</div><div className="text-[12px] text-[#5A6573]">{fmtData(f.ultimo_preco_em)}</div></>
+                            : <div className="mt-1 text-[14px] text-[#5A6573]">sem preço registrado</div>)
+                            : <div className="mt-1 text-[14px] text-[#8A94A0]">não visível no seu perfil</div>}
+                        </div>
+                        <div>
+                          <Rotulo>Cotações ganhas</Rotulo>
+                          <div className="mt-1 text-[17px] font-bold tabular-nums">{f.ganhas}</div>
+                          <div className="text-[12px] text-[#5A6573]">origem: {ORIGENS[f.origem] || f.origem}</div>
+                        </div>
                       </div>
-                    </div>
-                    {podeVincular && (
-                      <div className="flex gap-1">
-                        <Botao variante="texto" disabled={acao.ocupado} onClick={() => abrirEmail(f)}>Pedir cotação</Botao>
-                        <Botao variante="texto" disabled={acao.ocupado} onClick={() => acao.rodar(async () => { await api(`/os/produtos/${pid}/fornecedores/${f.id}`, { metodo: "DELETE" }); tudo(); })}>Desvincular</Botao>
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            ) : <p className="text-sm text-slate-600">Nenhum fornecedor vinculado a este produto.</p>}
-
-            {(forn.dados?.sugestoes.length ?? 0) > 0 && (
-              <div className="mt-3 rounded-lg bg-amber-50 p-3">
-                <div className="text-xs font-semibold text-amber-900">Sugestões (confirme antes de usar)</div>
-                <ul className="mt-1 space-y-1">
-                  {forn.dados!.sugestoes.map((s: J) => (
-                    <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
-                      <span><span className="font-medium">{s.nome}</span> <span className="text-xs text-amber-900">Fonte: {s.fonte}</span></span>
                       {podeVincular && (
-                        <span className="flex gap-1">
-                          <Botao disabled={acao.ocupado} onClick={() => acao.rodar(async () => { await api(`/os/produtos/${pid}/fornecedores`, { metodo: "POST", corpo: { fornecedor_id: s.id, origem: "marca" } }); tudo(); })}>Confirmar</Botao>
-                          <Botao variante="texto" disabled={acao.ocupado} onClick={() => acao.rodar(async () => { await api(`/os/produtos/${pid}/sugestoes/${s.id}/descartar`, { metodo: "POST" }); forn.recarregar(); })}>Descartar</Botao>
-                        </span>
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          <Botao disabled={acao.ocupado} onClick={() => abrirEmail(f)}><Mail className="h-4 w-4" aria-hidden /> Pedir cotação por e-mail</Botao>
+                          <Botao variante="texto" disabled={acao.ocupado} onClick={() => acao.rodar(async () => { await api(`/os/produtos/${pid}/fornecedores/${f.id}`, { metodo: "DELETE" }); tudo(); })}>Desvincular</Botao>
+                        </div>
                       )}
+                    </div>
+                  ))}
+                </div>
+              ) : <p className="text-[14px] text-[#5A6573]">Nenhum fornecedor vinculado a este produto ainda.</p>}
+
+              {(forn.dados?.sugestoes.length ?? 0) > 0 && (
+                <div className="mt-4 bg-[#FDF4E3] p-4">
+                  <Rotulo className="text-[#7A5210]">Sugestões · confirme antes de usar</Rotulo>
+                  <ul className="mt-2 space-y-2">
+                    {forn.dados!.sugestoes.map((s: J) => (
+                      <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 text-[14px]">
+                        <span><span className="font-semibold">{s.nome}</span> <span className="text-[13px] text-[#7A5210]">Fonte: {s.fonte}</span></span>
+                        {podeVincular && (
+                          <span className="flex gap-1">
+                            <Botao disabled={acao.ocupado} onClick={() => acao.rodar(async () => { await api(`/os/produtos/${pid}/fornecedores`, { metodo: "POST", corpo: { fornecedor_id: s.id, origem: "marca" } }); tudo(); })}>Confirmar</Botao>
+                            <Botao variante="texto" disabled={acao.ocupado} onClick={() => acao.rodar(async () => { await api(`/os/produtos/${pid}/sugestoes/${s.id}/descartar`, { metodo: "POST" }); forn.recarregar(); })}>Descartar</Botao>
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {podeVincular && (
+                <div className="mt-4">
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#5A6573]" aria-hidden />
+                    <input aria-label="Buscar fornecedor para vincular" className={`${campoCls} pl-9`} placeholder="Buscar outros fornecedores para vincular" value={buscaF} onChange={(e) => setBuscaF(e.target.value)} />
+                  </div>
+                  {buscaF.trim().length >= 2 && (
+                    <ul className="max-h-44 overflow-auto border border-t-0 border-[#C9D0D8]">
+                      {(achados.dados?.fornecedores || []).filter((f: J) => !forn.dados?.vinculados.some((v: J) => v.id === f.id)).map((f: J) => (
+                        <li key={f.id}><button className="w-full px-3 py-2 text-left text-[14px] hover:bg-[#F6F8FA]" onClick={() => acao.rodar(async () => { await api(`/os/produtos/${pid}/fornecedores`, { metodo: "POST", corpo: { fornecedor_id: f.id, origem: "equipe" } }); setBuscaF(""); tudo(); })}>{f.nome} <span className="text-[12px] text-[#5A6573]">{[f.cidade, f.uf].filter(Boolean).join(" · ")}</span></button></li>
+                      ))}
+                      {achados.dados && !achados.dados.fornecedores.length && <li className="px-3 py-2 text-[14px] text-[#5A6573]">Nenhum cadastro com esse nome. <Link href="/os/fornecedores" className="font-semibold text-[#00756D] hover:underline">Cadastrar fornecedor</Link></li>}
+                    </ul>
+                  )}
+                </div>
+              )}
+
+              {email && (
+                <div className="mt-4 border border-[#DCE0E5] border-t-2 border-t-[#0B1A2A] p-4">
+                  <div className="mb-3 text-[15px] font-bold">Pedido de cotação para {email.fornecedor.nome}</div>
+                  <div className="space-y-3">
+                    <Campo rotulo="Assunto"><input className={campoCls} value={email.assunto} onChange={(e) => setEmail({ ...email, assunto: e.target.value })} /></Campo>
+                    <Campo rotulo="Mensagem" dica="O envio é bloqueado se o texto tiver qualquer valor em reais ou preço de compra registrado."><textarea rows={10} className={`${campoCls} mono text-[13px]`} value={email.texto} onChange={(e) => setEmail({ ...email, texto: e.target.value })} /></Campo>
+                    {!email.para && <Aviso tom="alerta">Este fornecedor não tem e-mail cadastrado. O programa de e-mail vai abrir sem destinatário.</Aviso>}
+                    <div className="flex gap-2">
+                      <Botao variante="primario" disabled={acao.ocupado} onClick={registrarEmail}>Registrar e abrir no meu e-mail</Botao>
+                      <Botao onClick={() => setEmail(null)}>Cancelar</Botao>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {sol.dados && sol.dados.length > 0 && (
+                <p className="mt-3 text-[12px] text-[#5A6573]">Pedidos registrados: {sol.dados.map((s) => `${s.fornecedor} em ${fmtDataHora(s.enviada_em)} por ${s.por || "?"}`).join("; ")}.</p>
+              )}
+            </Estado>
+          </Cartao>
+
+          <Cartao titulo="Cotações anteriores" sub={`${d.anteriores.length + d.historico_importado.length} registro${d.anteriores.length + d.historico_importado.length === 1 ? "" : "s"}`} semPadding>
+            {d.anteriores.length || d.historico_importado.length ? (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[600px] border-collapse">
+                  <thead className={theadCls}><tr><th className={th}>Data</th><th className={th}>Evento</th><th className={th}>Fornecedor</th><th className={th}>Valores</th><th className={th}>Resultado</th></tr></thead>
+                  <tbody>
+                    {d.anteriores.map((a: J) => (
+                      <tr key={a.id} className="border-b border-[#E6E9ED] last:border-0">
+                        <td className={`${td} tabular-nums`}>{fmtData(a.capturado_em)}</td>
+                        <td className={td}><Link href={`/os/item/${a.id}`} className="mono text-[13px] font-medium text-[#00756D] hover:underline">{a.numero_evento}</Link><div className="text-[12px] text-[#5A6573]">{fmtNum(a.quantidade_total)} {unidade}</div></td>
+                        <td className={td}>{a.fornecedor || <span className="text-[#8A94A0]">–</span>}</td>
+                        <td className={td}>{a.cotacao_id ? <Valores v={a.valores} /> : <span className="text-[#8A94A0]">sem cotação registrada</span>}</td>
+                        <td className={td}><Etiqueta tom={tomAndamento(a.resultado || a.andamento)}>{ANDAMENTOS[a.resultado || a.andamento]}</Etiqueta></td>
+                      </tr>
+                    ))}
+                    {d.historico_importado.map((h: J, i: number) => (
+                      <tr key={`h${i}`} className="border-b border-[#E6E9ED] last:border-0">
+                        <td className={`${td} tabular-nums`}>{fmtData(h.data_ref)}</td>
+                        <td className={td}><Etiqueta>base da Seven</Etiqueta></td>
+                        <td className={td}>{h.fornecedor_texto || "–"}</td>
+                        <td className={td}><Valores v={h.valores} /></td>
+                        <td className={td}>{h.status || "–"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : <p className="px-5 py-5 text-[14px] text-[#5A6573]">Primeira aparição deste produto: sem cotação anterior.</p>}
+          </Cartao>
+
+          <Cartao titulo="Mesma peça, códigos diferentes">
+            {["conferir", "nao_identificavel"].includes(produto.nivel) && <div className="mb-3"><Aviso tom="alerta">A descrição não basta para identificar a peça. <Link href="/os/conferencia" className="font-semibold underline">Resolver na conferência manual</Link>.</Aviso></div>}
+            <div className="flex flex-wrap gap-1.5">
+              {d.codigos.length ? d.codigos.map((c: J) => <Etiqueta key={c.codigo} tom="contorno" mono>{c.codigo}{c.motivo?.startsWith("juncao") && " · juntado"}</Etiqueta>) : <span className="text-[14px] text-[#5A6573]">Linha capturada sem código Vale.</span>}
+            </div>
+            {d.mesma_referencia.length > 0 && (
+              <div className="mt-4">
+                <Rotulo>Mesma referência em outro código</Rotulo>
+                <p className="mt-1 text-[13px] text-[#5A6573]">O sistema não junta sozinho. Confirme só se for a mesma peça física; dá para desfazer.</p>
+                <ul className="mt-2 divide-y divide-[#E6E9ED]">
+                  {d.mesma_referencia.map((p: J) => (
+                    <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-[14px]">
+                      <span>{p.nome} <span className="mono text-[12px] text-[#5A6573]">{[p.fabricante, p.referencia].filter(Boolean).join(" / ")} · {(p.codigos || []).join(", ") || "sem código"}</span></span>
+                      {podeResolver && <Botao disabled={acao.ocupado} onClick={() => acao.rodar(async () => { await api(`/os/produtos/${pid}/juntar`, { metodo: "POST", corpo: { origem_id: p.id } }); tudo(); })}>É a mesma peça</Botao>}
                     </li>
                   ))}
                 </ul>
               </div>
             )}
-
-            {podeVincular && (
-              <div className="mt-3 border-t border-slate-100 pt-3">
-                <Campo rotulo="Vincular fornecedor já cadastrado"><input className={campoCls} placeholder="Digite parte do nome" value={buscaF} onChange={(e) => setBuscaF(e.target.value)} /></Campo>
-                {buscaF.trim().length >= 2 && (
-                  <ul className="mt-1 max-h-40 overflow-auto rounded-lg border border-slate-200">
-                    {(achados.dados?.fornecedores || []).filter((f: J) => !forn.dados?.vinculados.some((v: J) => v.id === f.id)).map((f: J) => (
-                      <li key={f.id}><button className="w-full px-3 py-1.5 text-left text-sm hover:bg-slate-50" onClick={() => acao.rodar(async () => { await api(`/os/produtos/${pid}/fornecedores`, { metodo: "POST", corpo: { fornecedor_id: f.id, origem: "equipe" } }); setBuscaF(""); tudo(); })}>{f.nome} <span className="text-xs text-slate-500">{[f.cidade, f.uf].filter(Boolean).join("/")}</span></button></li>
-                    ))}
-                    {achados.dados && !achados.dados.fornecedores.length && <li className="px-3 py-2 text-sm text-slate-500">Nenhum cadastro com esse nome. <Link href="/os/fornecedores" className="text-indigo-700 hover:underline">Cadastrar fornecedor</Link></li>}
-                  </ul>
-                )}
-              </div>
-            )}
-
-            {email && (
-              <div className="mt-3 rounded-lg border border-slate-200 p-3">
-                <div className="mb-2 text-sm font-semibold">Pedido de cotação para {email.fornecedor.nome}</div>
-                <div className="space-y-2">
-                  <Campo rotulo="Assunto"><input className={campoCls} value={email.assunto} onChange={(e) => setEmail({ ...email, assunto: e.target.value })} /></Campo>
-                  <Campo rotulo="Mensagem" dica="O envio é bloqueado se o texto tiver qualquer valor em reais ou preço de compra registrado."><textarea rows={10} className={campoCls} value={email.texto} onChange={(e) => setEmail({ ...email, texto: e.target.value })} /></Campo>
-                  {!email.para && <Aviso tom="alerta">Este fornecedor não tem e-mail cadastrado. O programa de e-mail vai abrir sem destinatário.</Aviso>}
-                  <div className="flex gap-2">
-                    <Botao variante="primario" disabled={acao.ocupado} onClick={registrarEmail}>Registrar e abrir no meu e-mail</Botao>
-                    <Botao onClick={() => setEmail(null)}>Cancelar</Botao>
-                  </div>
-                </div>
-              </div>
-            )}
-            {sol.dados && sol.dados.length > 0 && (
-              <p className="mt-3 text-xs text-slate-500">Pedidos registrados: {sol.dados.map((s) => `${s.fornecedor} em ${fmtDataHora(s.enviada_em)} por ${s.por || "?"}`).join("; ")}.</p>
-            )}
-          </Estado>
-        </Cartao>
-
-        <Cartao titulo="Cotação">
-          <Estado erro={cot.erro} carregando={cot.carregando && !cot.dados}>
-            {cot.dados?.resultado && <div className="mb-3"><Aviso tom={cot.dados.resultado.resultado === "ganha" ? "bom" : "alerta"}>Resultado: {ANDAMENTOS[cot.dados.resultado.resultado]}{cot.dados.resultado.pedido_venda && ` · pedido ${cot.dados.resultado.pedido_venda}`}</Aviso></div>}
-            {cotacoes.length === 0 && <p className="mb-3 text-sm text-slate-600">Nenhuma cotação lançada para este item.</p>}
-            <ul className="space-y-2">
-              {cotacoes.map((c) => (
-                <li key={c.id} className={`rounded-lg border p-3 text-sm ${c.situacao === "substituida" ? "border-slate-100 bg-slate-50 text-slate-500" : "border-slate-200"}`}>
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="font-medium">Versão {c.versao} · {c.fornecedor || "sem fornecedor"}{c.conta && ` · ${c.conta}`}</span>
-                    <Etiqueta tom={({ pronta: "bom", enviada: "info", rascunho: "alerta" } as J)[c.situacao] || "neutro"}>{({ pronta: "Pronta para enviar", enviada: "Enviada", rascunho: "Com alerta aberto", substituida: "Substituída" } as J)[c.situacao]}</Etiqueta>
-                  </div>
-                  <div className="mt-1"><Valores v={c.valores} /></div>
-                  <div className="mt-1 text-xs text-slate-500">por {c.por || "?"} em {fmtDataHora(c.criada_em)}</div>
-                  {c.alertas.map((a: J) => (
-                    <div key={a.id} className={`mt-2 rounded-lg p-2 ${a.situacao === "aberto" ? "bg-amber-50" : "bg-slate-50"}`}>
-                      <div className="font-medium text-amber-900">{ALERTAS[a.tipo]}{a.valor_referencia != null && ` (último preço unitário: ${fmtReais(a.valor_referencia)})`}</div>
-                      {a.situacao === "justificado" ? <div className="text-xs text-slate-600">Mantido com justificativa: {a.justificativa}</div>
-                        : a.tipo === "sem_preco" ? <div className="text-xs text-amber-900">Lance uma nova versão com o preço de compra.</div>
-                        : podeCotar && c.situacao !== "substituida" && (
-                          <form className="mt-1 flex flex-wrap gap-2" onSubmit={(e) => { e.preventDefault(); acao.rodar(async () => { await api(`/os/alertas/${a.id}/justificar`, { metodo: "POST", corpo: { justificativa: just[a.id] || "" } }); cot.recarregar(); }); }}>
-                            <input required minLength={5} aria-label="Justificativa" className={`${campoCls} min-w-56 flex-1`} placeholder="Corrija com nova versão, ou justifique para manter" value={just[a.id] || ""} onChange={(e) => setJust({ ...just, [a.id]: e.target.value })} />
-                            <Botao type="submit" disabled={acao.ocupado}>Manter com justificativa</Botao>
-                          </form>
-                        )}
-                    </div>
+            {d.juncoes.length > 0 && (
+              <div className="mt-4">
+                <Rotulo>Junções feitas</Rotulo>
+                <ul className="mt-2 divide-y divide-[#E6E9ED]">
+                  {d.juncoes.map((j: J) => (
+                    <li key={j.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-[14px]">
+                      <span>{j.origem_nome} <span className="mono text-[12px] text-[#5A6573]">{(j.codigos || []).join(", ") || "sem código"} · {fmtData(j.em)}</span></span>
+                      {podeResolver && <Botao variante="texto" disabled={acao.ocupado} onClick={() => acao.rodar(async () => { await api(`/os/juncoes/${j.id}/desfazer`, { metodo: "POST" }); tudo(); })}>Desfazer</Botao>}
+                    </li>
                   ))}
-                </li>
-              ))}
-            </ul>
+                </ul>
+              </div>
+            )}
+          </Cartao>
 
-            {podeCotar && aceitaCotacao && (
-              <form onSubmit={(e) => { e.preventDefault(); lancar(); }} className="mt-3 border-t border-slate-100 pt-3">
-                <div className="mb-2 text-sm font-semibold">{cotacoes.length ? "Nova versão" : "Lançar cotação"} <span className="font-normal text-slate-500">valores unitários, para {fmtNum(item.quantidade)} {(item.unidade || "").split("-")[0]}</span></div>
-                <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+          <div className="grid gap-5 md:grid-cols-2">
+            <Cartao titulo="Declínios deste produto" sub={String(d.declinios.length)}>
+              {d.declinios.length ? (
+                <ul className="divide-y divide-[#E6E9ED] text-[14px]">
+                  {d.declinios.map((x: J, i: number) => <li key={i} className="py-2"><div className="font-semibold">{x.motivo}</div><div className="text-[12px] text-[#5A6573]">evento {x.numero_evento} · {fmtDataHora(x.em)} · {x.por || "?"}</div></li>)}
+                </ul>
+              ) : <p className="text-[14px] text-[#5A6573]">Nunca declinado.</p>}
+            </Cartao>
+            <Cartao titulo="Andamento do item">
+              {d.andamentos.length ? (
+                <ul className="divide-y divide-[#E6E9ED] text-[14px]">
+                  {d.andamentos.map((x: J, i: number) => <li key={i} className="py-2">{ANDAMENTOS[x.de] || "–"} → <span className="font-semibold">{ANDAMENTOS[x.para]}</span>{x.motivo && `: ${x.motivo}`}<div className="text-[12px] text-[#5A6573]">{fmtDataHora(x.em)} · {x.por || "?"}</div></li>)}
+                </ul>
+              ) : <p className="text-[14px] text-[#5A6573]">Sem movimentação. Capturado em {fmtDataHora(item.capturado_em)}.</p>}
+            </Cartao>
+          </div>
+        </div>
+
+        <div className="space-y-5 xl:sticky xl:top-20">
+          {cot.dados?.resultado && <Aviso tom={cot.dados.resultado.resultado === "ganha" ? "bom" : "alerta"}>Resultado: {ANDAMENTOS[cot.dados.resultado.resultado]}{cot.dados.resultado.pedido_venda && ` · pedido ${cot.dados.resultado.pedido_venda}`}</Aviso>}
+
+          {podeCotar && aceitaCotacao && (
+            <section className="border border-[#DCE0E5] border-t-2 border-t-[#0B1A2A] bg-white">
+              <header className="border-b border-[#E6E9ED] px-5 py-4">
+                <h2 className="text-[17px] font-bold">{cotacoes.length ? "Nova versão da cotação" : "Nova cotação"}</h2>
+                <p className="text-[13px] text-[#5A6573]">Valores unitários · {fmtNum(item.quantidade)} {unidade}</p>
+              </header>
+              <form onSubmit={(e) => { e.preventDefault(); lancar(); }}>
+                <div className="space-y-4 px-5 py-5">
                   <Campo rotulo="Fornecedor">
                     <select className={campoCls} value={nova.fornecedor_id} onChange={(e) => setNova({ ...nova, fornecedor_id: e.target.value })}>
                       <option value="">Sem fornecedor</option>
@@ -254,111 +331,72 @@ export default function Ficha() {
                       </select>
                     </Campo>
                   )}
-                  <Campo rotulo="Preço de compra (un.)"><input inputMode="decimal" className={campoCls} value={nova.preco_compra} onChange={(e) => setNova({ ...nova, preco_compra: e.target.value })} placeholder="0,00" /></Campo>
-                  <Campo rotulo="IPI (%)"><input inputMode="decimal" className={campoCls} value={nova.ipi} onChange={(e) => setNova({ ...nova, ipi: e.target.value })} placeholder="0" /></Campo>
-                  <Campo rotulo="Frete (un.)"><input inputMode="decimal" className={campoCls} value={nova.frete} onChange={(e) => setNova({ ...nova, frete: e.target.value })} placeholder="0,00" /></Campo>
-                  <Campo rotulo="Preço de venda (un.)"><input inputMode="decimal" className={campoCls} value={nova.preco_venda} onChange={(e) => setNova({ ...nova, preco_venda: e.target.value })} placeholder="0,00" /></Campo>
+                  <Campo rotulo="Preço de compra (R$)"><input inputMode="decimal" className={`${campoCls} h-[42px] text-[16px]`} value={nova.preco_compra} onChange={(e) => setNova({ ...nova, preco_compra: e.target.value })} placeholder="0,00" /></Campo>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Campo rotulo="IPI (%)"><input inputMode="decimal" className={campoCls} value={nova.ipi} onChange={(e) => setNova({ ...nova, ipi: e.target.value })} placeholder="0" /></Campo>
+                    <Campo rotulo="Frete unit. (R$)"><input inputMode="decimal" className={campoCls} value={nova.frete} onChange={(e) => setNova({ ...nova, frete: e.target.value })} placeholder="0,00" /></Campo>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Campo rotulo="Preço de venda unit. (R$)"><input inputMode="decimal" className={campoCls} value={nova.preco_venda} onChange={(e) => setNova({ ...nova, preco_venda: e.target.value })} placeholder="0,00" /></Campo>
+                    {eu.pode("margem.ver") && (
+                      <div>
+                        <span className="mb-1.5 block text-[13px] font-semibold">Margem resultante</span>
+                        <div className="flex h-[38px] items-center bg-[#EEF1F4] px-3 text-[14px] font-semibold tabular-nums">{margemPrevia == null ? "—" : `${fmtNum(margemPrevia, 1)}%`}</div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <Botao type="submit" variante="primario" disabled={acao.ocupado}>{cotacoes.length ? "Salvar nova versão" : "Salvar cotação"}</Botao>
+                <div className="flex flex-wrap gap-2 border-t border-[#E6E9ED] px-5 py-4">
+                  <button type="submit" disabled={acao.ocupado} className="h-[44px] flex-1 bg-[#0B1A2A] px-4 text-left text-[15px] font-semibold text-white hover:bg-[#1E3550] disabled:opacity-50">{cotacoes.length ? "Registrar nova versão" : "Registrar cotação"}</button>
                   {item.andamento === "em_cotacao" && atual && (
-                    <Botao type="button" disabled={acao.ocupado || atual.situacao !== "pronta"} title={atual.situacao !== "pronta" ? "Resolva os alertas antes" : ""} onClick={() => acao.rodar(async () => { await api(`/os/itens/${id}/enviar`, { metodo: "POST" }); tudo(); })}>Marcar como enviada no Coupa</Botao>
+                    <Botao type="button" className="h-[44px]" disabled={acao.ocupado || atual.situacao !== "pronta"} title={atual.situacao !== "pronta" ? "Resolva os alertas antes" : ""} onClick={() => acao.rodar(async () => { await api(`/os/itens/${id}/enviar`, { metodo: "POST" }); tudo(); })}>Marcar enviada no Coupa</Botao>
                   )}
                 </div>
               </form>
-            )}
-            {podeCotar && ["enviada", "ganha", "perdida"].includes(item.andamento) && (
-              <form onSubmit={(e) => { e.preventDefault(); acao.rodar(async () => { await api(`/os/itens/${id}/resultado`, { metodo: "POST", corpo: res }); tudo(); }); }} className="mt-3 flex flex-wrap items-end gap-2 border-t border-slate-100 pt-3">
+            </section>
+          )}
+
+          {podeCotar && ["enviada", "ganha", "perdida"].includes(item.andamento) && (
+            <Cartao titulo="Resultado no Coupa" destaque>
+              <form onSubmit={(e) => { e.preventDefault(); acao.rodar(async () => { await api(`/os/itens/${id}/resultado`, { metodo: "POST", corpo: res }); tudo(); }); }} className="grid grid-cols-2 gap-3">
                 <Campo rotulo="Resultado"><select className={campoCls} value={res.resultado} onChange={(e) => setRes({ ...res, resultado: e.target.value })}><option value="ganha">Ganha</option><option value="perdida">Perdida</option></select></Campo>
-                <Campo rotulo="Pedido de venda"><input className={campoCls} value={res.pedido_venda} onChange={(e) => setRes({ ...res, pedido_venda: e.target.value })} /></Campo>
-                <Botao type="submit" disabled={acao.ocupado}>Registrar resultado</Botao>
+                <Campo rotulo="Nº do pedido de venda"><input className={`${campoCls} mono`} placeholder="Preencher quando ganhar" value={res.pedido_venda} onChange={(e) => setRes({ ...res, pedido_venda: e.target.value })} /></Campo>
+                <div className="col-span-2"><Botao type="submit" variante="primario" disabled={acao.ocupado}>Registrar resultado</Botao></div>
               </form>
-            )}
-          </Estado>
-        </Cartao>
-      </div>
+            </Cartao>
+          )}
 
-      <Cartao titulo="Identificação e códigos">
-        <div className="flex flex-wrap gap-1">
-          {d.codigos.length ? d.codigos.map((c: J) => <Etiqueta key={c.codigo}>{c.codigo}{c.motivo?.startsWith("juncao") && " (juntado)"}</Etiqueta>) : <span className="text-sm text-slate-600">Linha capturada sem código Vale.</span>}
-        </div>
-        {["conferir", "nao_identificavel"].includes(produto.nivel) && <div className="mt-3"><Aviso tom="alerta">A descrição não basta para identificar a peça. <Link href="/os/conferencia" className="font-medium underline">Resolver na conferência manual</Link>.</Aviso></div>}
-        {d.mesma_referencia.length > 0 && (
-          <div className="mt-3">
-            <div className="text-sm font-semibold">Mesma referência em outro código</div>
-            <p className="text-xs text-slate-500">O sistema não junta sozinho. Confirme só se for a mesma peça física; dá para desfazer.</p>
-            <ul className="mt-1 divide-y divide-slate-100">
-              {d.mesma_referencia.map((p: J) => (
-                <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 py-1.5 text-sm">
-                  <span>{p.nome} <span className="text-xs text-slate-500">{[p.fabricante, p.referencia].filter(Boolean).join(" · ")} · cód. {(p.codigos || []).join(", ") || "sem código"}</span></span>
-                  {podeResolver && <Botao disabled={acao.ocupado} onClick={() => acao.rodar(async () => { await api(`/os/produtos/${pid}/juntar`, { metodo: "POST", corpo: { origem_id: p.id } }); tudo(); })}>É a mesma peça</Botao>}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-        {d.juncoes.length > 0 && (
-          <div className="mt-3">
-            <div className="text-sm font-semibold">Junções feitas</div>
-            <ul className="mt-1 divide-y divide-slate-100">
-              {d.juncoes.map((j: J) => (
-                <li key={j.id} className="flex flex-wrap items-center justify-between gap-2 py-1.5 text-sm">
-                  <span>{j.origem_nome} <span className="text-xs text-slate-500">cód. {(j.codigos || []).join(", ") || "sem código"} · {fmtData(j.em)} · {j.motivo}</span></span>
-                  {podeResolver && <Botao variante="texto" disabled={acao.ocupado} onClick={() => acao.rodar(async () => { await api(`/os/juncoes/${j.id}/desfazer`, { metodo: "POST" }); tudo(); })}>Desfazer</Botao>}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </Cartao>
-
-      <Cartao titulo="Aparições anteriores deste produto">
-        {d.anteriores.length ? (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px]">
-              <thead><tr><th className={th}>Capturado</th><th className={th}>Evento</th><th className={th}>Qtd.</th><th className={th}>Andamento</th><th className={th}>Fornecedor</th><th className={th}>Valores</th></tr></thead>
-              <tbody>
-                {d.anteriores.map((a: J) => (
-                  <tr key={a.id} className="border-t border-slate-100">
-                    <td className={td}>{fmtData(a.capturado_em)}</td>
-                    <td className={td}><Link href={`/os/item/${a.id}`} className="text-indigo-700 hover:underline">{a.numero_evento}</Link></td>
-                    <td className={`${td} tabular-nums`}>{fmtNum(a.quantidade_total)}</td>
-                    <td className={td}><Etiqueta tom={tomAndamento(a.resultado || a.andamento)}>{ANDAMENTOS[a.resultado || a.andamento]}</Etiqueta></td>
-                    <td className={td}>{a.fornecedor || <span className="text-slate-400">–</span>}</td>
-                    <td className={td}>{a.cotacao_id ? <Valores v={a.valores} /> : <span className="text-slate-400">sem cotação registrada</span>}</td>
-                  </tr>
+          <Cartao titulo="Versões desta cotação" sub={String(cotacoes.length)}>
+            <Estado erro={cot.erro} carregando={cot.carregando && !cot.dados}>
+              {cotacoes.length === 0 && <p className="text-[14px] text-[#5A6573]">Nenhuma cotação lançada para este item.</p>}
+              <ul className="space-y-3">
+                {cotacoes.map((c) => (
+                  <li key={c.id} className={`border p-3 text-[14px] ${c.situacao === "substituida" ? "border-[#E6E9ED] bg-[#F6F8FA] text-[#5A6573]" : "border-[#C9D0D8]"}`}>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-semibold">v{c.versao} · {c.fornecedor || "sem fornecedor"}{c.conta && ` · ${c.conta}`}</span>
+                      <Etiqueta tom={({ pronta: "bom", enviada: "info", rascunho: "alerta" } as J)[c.situacao] || "neutro"}>{({ pronta: "Pronta para enviar", enviada: "Enviada", rascunho: "Alerta aberto", substituida: "Substituída" } as J)[c.situacao]}</Etiqueta>
+                    </div>
+                    <div className="mt-1.5"><Valores v={c.valores} /></div>
+                    <div className="mt-1 text-[12px] text-[#5A6573]">por {c.por || "?"} em {fmtDataHora(c.criada_em)}</div>
+                    {c.alertas.map((a: J) => (
+                      <div key={a.id} className={`mt-2 p-2.5 ${a.situacao === "aberto" ? "bg-[#FDF4E3]" : "bg-[#F6F8FA]"}`}>
+                        <div className="font-semibold text-[#7A5210]">{ALERTAS[a.tipo]}{a.valor_referencia != null && ` (último unitário: ${fmtReais(a.valor_referencia)})`}</div>
+                        {a.situacao === "justificado" ? <div className="text-[12px] text-[#334255]">Mantido com justificativa: {a.justificativa}</div>
+                          : a.tipo === "sem_preco" ? <div className="text-[12px] text-[#7A5210]">Lance uma nova versão com o preço de compra.</div>
+                          : podeCotar && c.situacao !== "substituida" && (
+                            <form className="mt-2 flex flex-wrap gap-2" onSubmit={(e) => { e.preventDefault(); acao.rodar(async () => { await api(`/os/alertas/${a.id}/justificar`, { metodo: "POST", corpo: { justificativa: just[a.id] || "" } }); cot.recarregar(); }); }}>
+                              <input required minLength={5} aria-label="Justificativa" className={`${campoCls} min-w-48 flex-1`} placeholder="Corrija com nova versão ou justifique" value={just[a.id] || ""} onChange={(e) => setJust({ ...just, [a.id]: e.target.value })} />
+                              <Botao type="submit" disabled={acao.ocupado}>Manter</Botao>
+                            </form>
+                          )}
+                      </div>
+                    ))}
+                  </li>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        ) : <p className="text-sm text-slate-600">Primeira aparição deste produto na captura.</p>}
-        {d.historico_importado.length > 0 && (
-          <div className="mt-4">
-            <div className="text-sm font-semibold">Histórico importado da base da Seven</div>
-            <ul className="mt-1 divide-y divide-slate-100 text-sm">
-              {d.historico_importado.map((h: J, i: number) => (
-                <li key={i} className="flex flex-wrap items-center gap-x-4 py-1.5"><span>{fmtData(h.data_ref)}</span><span>{h.fornecedor_texto || h.status || "–"}</span><Valores v={h.valores} /><Etiqueta>{h.origem}</Etiqueta></li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </Cartao>
-
-      <div className="grid gap-4 xl:grid-cols-2">
-        <Cartao titulo={`Declínios deste produto (${d.declinios.length})`}>
-          {d.declinios.length ? (
-            <ul className="divide-y divide-slate-100 text-sm">
-              {d.declinios.map((x: J, i: number) => <li key={i} className="py-1.5"><span className="font-medium">{x.motivo}</span> <span className="text-xs text-slate-500">evento {x.numero_evento} · {fmtDataHora(x.em)} · {x.por || "?"}</span></li>)}
-            </ul>
-          ) : <p className="text-sm text-slate-600">Nunca declinado.</p>}
-        </Cartao>
-        <Cartao titulo="Andamento do item">
-          {d.andamentos.length ? (
-            <ul className="divide-y divide-slate-100 text-sm">
-              {d.andamentos.map((x: J, i: number) => <li key={i} className="py-1.5">{ANDAMENTOS[x.de] || "–"} para <span className="font-medium">{ANDAMENTOS[x.para]}</span>{x.motivo && `: ${x.motivo}`} <span className="text-xs text-slate-500">{fmtDataHora(x.em)} · {x.por || "?"}</span></li>)}
-            </ul>
-          ) : <p className="text-sm text-slate-600">Sem movimentação ainda. Capturado em {fmtDataHora(item.capturado_em)}.</p>}
-        </Cartao>
+              </ul>
+            </Estado>
+          </Cartao>
+        </div>
       </div>
     </div>
   );

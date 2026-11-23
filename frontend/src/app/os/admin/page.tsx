@@ -25,8 +25,8 @@ function Usuarios() {
               <thead><tr><th className={th}>Pessoa</th><th className={th}>Perfil</th><th className={th}>CNPJs liberados</th><th className={th}>Situação</th></tr></thead>
               <tbody>
                 {(us.dados || []).map((u) => (
-                  <tr key={u.user_id} className="border-t border-slate-100">
-                    <td className={td}><div className="font-medium">{u.nome || "(sem nome)"}</div><div className="text-xs text-slate-500">{u.email}</div></td>
+                  <tr key={u.user_id} className="border-t border-[#E6E9ED]">
+                    <td className={td}><div className="font-medium">{u.nome || "(sem nome)"}</div><div className="text-[12px] text-[#5A6573]">{u.email}</div></td>
                     <td className={td}>
                       <select aria-label={`Perfil de ${u.email}`} className={campoCls} disabled={u.user_id === eu.id || acao.ocupado} value={u.perfil} onChange={(e) => alterar(u.user_id, { perfil: e.target.value })}>
                         {Object.entries(PERFIS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
@@ -35,7 +35,7 @@ function Usuarios() {
                     <td className={td}>
                       <div className="flex flex-wrap gap-3">
                         {ativas.map((c) => (
-                          <label key={c.id} className="flex items-center gap-1.5 text-sm"><input type="checkbox" disabled={acao.ocupado} checked={u.contas.includes(c.id)} onChange={() => alterar(u.user_id, { contas: troca(u.contas, c.id) })} /> {c.nome}</label>
+                          <label key={c.id} className="flex items-center gap-1.5 text-[14px]"><input type="checkbox" disabled={acao.ocupado} checked={u.contas.includes(c.id)} onChange={() => alterar(u.user_id, { contas: troca(u.contas, c.id) })} /> {c.nome}</label>
                         ))}
                       </div>
                     </td>
@@ -51,12 +51,12 @@ function Usuarios() {
         </Estado>
       </Cartao>
       <Cartao titulo="Dar acesso a uma pessoa">
-        <p className="mb-3 text-sm text-slate-600">A pessoa precisa já ter login no sistema. O convite por e-mail ainda não está disponível.</p>
+        <p className="mb-3 text-[14px] text-[#5A6573]">A pessoa precisa já ter login no sistema. O convite por e-mail ainda não está disponível.</p>
         <form onSubmit={(e) => { e.preventDefault(); acao.rodar(async () => { await api("/os/admin/usuarios", { metodo: "POST", corpo: novo }); setNovo({ email: "", nome: "", perfil: "cotacao", contas: [], ativo: true }); us.recarregar(); }); }} className="grid gap-2 md:grid-cols-4">
           <Campo rotulo="E-mail do login"><input required type="email" className={campoCls} value={novo.email} onChange={(e) => setNovo({ ...novo, email: e.target.value })} /></Campo>
           <Campo rotulo="Nome"><input className={campoCls} value={novo.nome} onChange={(e) => setNovo({ ...novo, nome: e.target.value })} /></Campo>
           <Campo rotulo="Perfil"><select className={campoCls} value={novo.perfil} onChange={(e) => setNovo({ ...novo, perfil: e.target.value })}>{Object.entries(PERFIS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></Campo>
-          <div><span className="mb-1 block text-xs font-medium text-slate-600">CNPJs</span><div className="flex flex-wrap gap-3 py-1.5">{ativas.map((c) => <label key={c.id} className="flex items-center gap-1.5 text-sm"><input type="checkbox" checked={novo.contas.includes(c.id)} onChange={() => setNovo({ ...novo, contas: troca(novo.contas, c.id) })} /> {c.nome}</label>)}</div></div>
+          <div><span className="mb-1 block text-[12px] font-medium text-[#5A6573]">CNPJs</span><div className="flex flex-wrap gap-3 py-1.5">{ativas.map((c) => <label key={c.id} className="flex items-center gap-1.5 text-[14px]"><input type="checkbox" checked={novo.contas.includes(c.id)} onChange={() => setNovo({ ...novo, contas: troca(novo.contas, c.id) })} /> {c.nome}</label>)}</div></div>
           <div><Botao type="submit" variante="primario" disabled={acao.ocupado}>Dar acesso</Botao></div>
         </form>
       </Cartao>
@@ -84,9 +84,9 @@ function Contas() {
             <thead><tr><th className={th}>Conta</th><th className={th}>Portal</th><th className={th}>CNPJ</th><th className={th}>Filial</th><th className={th}>Ligada ao robô</th><th className={th}></th></tr></thead>
             <tbody>
               {(contas.dados || []).map((c) => (
-                <tr key={c.id} className="border-t border-slate-100">
+                <tr key={c.id} className="border-t border-[#E6E9ED]">
                   <td className={td}><span className="font-medium">{c.nome}</span>{!c.ativa && <> <Etiqueta>inativa</Etiqueta></>}</td>
-                  <td className={td}>{c.portal}</td><td className={`${td} tabular-nums`}>{c.cnpj || <span className="text-slate-400">a preencher</span>}</td><td className={td}>{c.filial}</td>
+                  <td className={td}>{c.portal}</td><td className={`${td} tabular-nums`}>{c.cnpj || <span className="text-[#8A94A0]">a preencher</span>}</td><td className={td}>{c.filial}</td>
                   <td className={td}>{c.conta_robo ? <Etiqueta tom="bom">{c.conta_robo}</Etiqueta> : <Etiqueta tom="alerta">ainda não captura</Etiqueta>}</td>
                   <td className={`${td} text-right`}><Botao variante="texto" onClick={() => { acao.limpar(); setEdit({ ...c }); }}>Editar</Botao></td>
                 </tr>
@@ -94,7 +94,7 @@ function Contas() {
             </tbody>
           </table>
         </Estado>
-        <p className="mt-3 text-xs text-slate-500">Conta nova criada aqui só passa a capturar depois que a SSYS ligar o robô a ela. As senhas do Coupa ficam cifradas no banco e nunca são mostradas.</p>
+        <p className="mt-3 text-[12px] text-[#5A6573]">Conta nova criada aqui só passa a capturar depois que a SSYS ligar o robô a ela. As senhas do Coupa ficam cifradas no banco e nunca são mostradas.</p>
       </Cartao>
       {edit && (
         <Cartao titulo={edit.id ? `Editar ${edit.nome}` : "Nova conta"}>
@@ -102,7 +102,7 @@ function Contas() {
             <Campo rotulo="Nome"><input required autoFocus className={campoCls} value={edit.nome} onChange={(e) => setEdit({ ...edit, nome: e.target.value })} /></Campo>
             <Campo rotulo="CNPJ"><input className={campoCls} value={edit.cnpj || ""} onChange={(e) => setEdit({ ...edit, cnpj: e.target.value })} placeholder="00.000.000/0000-00" /></Campo>
             <Campo rotulo="Filial"><input className={campoCls} value={edit.filial || ""} onChange={(e) => setEdit({ ...edit, filial: e.target.value })} /></Campo>
-            <label className="flex items-end gap-2 pb-2 text-sm"><input type="checkbox" checked={edit.ativa} onChange={(e) => setEdit({ ...edit, ativa: e.target.checked })} /> Ativa</label>
+            <label className="flex items-end gap-2 pb-2 text-[14px]"><input type="checkbox" checked={edit.ativa} onChange={(e) => setEdit({ ...edit, ativa: e.target.checked })} /> Ativa</label>
             {acao.erro && <div className="md:col-span-4"><Aviso tom="ruim">{acao.erro}</Aviso></div>}
             <div className="flex gap-2 md:col-span-4"><Botao type="submit" variante="primario" disabled={acao.ocupado}>Salvar</Botao><Botao type="button" onClick={() => setEdit(null)}>Cancelar</Botao></div>
           </form>
@@ -157,7 +157,7 @@ function Exportar() {
   const acao = useAcao();
   return (
     <Cartao titulo="Exportação completa da base">
-      <p className="text-sm text-slate-700">Gera um arquivo .zip com um CSV por tabela do Seven OS, incluindo preços e margens. Cada exportação fica registrada na auditoria.</p>
+      <p className="text-[14px] text-[#334255]">Gera um arquivo .zip com um CSV por tabela do Seven OS, incluindo preços e margens. Cada exportação fica registrada na auditoria.</p>
       {eu.perfil === "administrador" ? (
         <div className="mt-3"><Botao variante="primario" disabled={acao.ocupado} onClick={() => acao.rodar(() => baixar("/os/admin/exportar-base", { metodo: "POST" }, "seven_os_base.zip"))}>{acao.ocupado ? "Gerando…" : "Exportar a base completa"}</Botao></div>
       ) : <div className="mt-3"><Aviso tom="alerta">Só o perfil Administrador exporta a base completa.</Aviso></div>}
@@ -176,8 +176,8 @@ export default function Admin() {
   return (
     <>
       <Titulo sub="Toda mudança aqui fica registrada na auditoria.">Administração</Titulo>
-      <div role="tablist" className="mb-4 flex flex-wrap gap-1 border-b border-slate-200">
-        {ABAS_ADMIN.map(([k, r]) => <button key={k} role="tab" aria-selected={aba === k} onClick={() => setAba(k)} className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium ${aba === k ? "border-slate-900 text-slate-900" : "border-transparent text-slate-500 hover:text-slate-800"}`}>{r}</button>)}
+      <div role="tablist" className="mb-4 flex flex-wrap gap-1 border-b border-[#DCE0E5]">
+        {ABAS_ADMIN.map(([k, r]) => <button key={k} role="tab" aria-selected={aba === k} onClick={() => setAba(k)} className={`-mb-px border-b-2 px-3 py-2 text-[14px] font-medium ${aba === k ? "border-[#0B1A2A] text-[#0B1A2A]" : "border-transparent text-[#5A6573] hover:text-[#0B1A2A]"}`}>{r}</button>)}
       </div>
       <Atual />
     </>

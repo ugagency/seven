@@ -41,13 +41,13 @@ export default function Captura() {
                 <thead className="sticky top-0 bg-white"><tr><th className={th}>Data</th><th className={th}>Por CNPJ</th><th className={th}></th></tr></thead>
                 <tbody>
                   {Object.entries(porDia).map(([dia, linhas]) => (
-                    <tr key={dia} className="border-t border-slate-100">
+                    <tr key={dia} className="border-t border-[#E6E9ED]">
                       <td className={`${td} whitespace-nowrap font-medium`}>{fmtData(dia)}</td>
                       <td className={td}>
                         <div className="flex flex-wrap gap-2">
                           {linhas.map((l) => (
-                            <button key={l.conta_id} disabled={!eu.pode("captura.baixar")} onClick={() => planilha(dia, l.conta_id)} className="rounded-lg border border-slate-200 px-2 py-1 text-left text-xs hover:border-slate-400 disabled:opacity-60">
-                              <span className="font-medium text-slate-900">{l.conta}</span> <span className="tabular-nums text-slate-500">{fmtNum(l.linhas)} linhas · {fmtNum(l.eventos)} eventos</span>
+                            <button key={l.conta_id} disabled={!eu.pode("captura.baixar")} onClick={() => planilha(dia, l.conta_id)} className=" border border-[#DCE0E5] px-2 py-1 text-left text-[12px] hover:border-[#0B1A2A] disabled:opacity-60">
+                              <span className="font-medium text-[#0B1A2A]">{l.conta}</span> <span className="tabular-nums text-[#5A6573]">{fmtNum(l.linhas)} linhas · {fmtNum(l.eventos)} eventos</span>
                             </button>
                           ))}
                         </div>
@@ -62,11 +62,11 @@ export default function Captura() {
         </Cartao>
         <Cartao titulo="Atualizações recentes">
           <Estado erro={exec.erro} carregando={exec.carregando && !exec.dados} vazio={exec.dados && !exec.dados.length && "Nenhuma ainda."}>
-            <ul className="divide-y divide-slate-100 text-sm">
+            <ul className="divide-y divide-[#E6E9ED] text-[14px]">
               {(exec.dados || []).map((e) => (
                 <li key={e.id} className="py-2">
                   <div className="flex items-center justify-between gap-2"><span>{fmtDataHora(e.iniciada_em)}</span><Etiqueta tom={e.situacao === "sucesso" ? "bom" : e.situacao === "falha" ? "ruim" : "info"}>{e.situacao}</Etiqueta></div>
-                  <div className="text-xs text-slate-500">{fmtNum(e.linhas_novas)} linha(s) nova(s) · {e.por || "sistema"}{e.erro && ` · ${e.erro}`}</div>
+                  <div className="text-[12px] text-[#5A6573]">{fmtNum(e.linhas_novas)} linha(s) nova(s) · {e.por || "sistema"}{e.erro && ` · ${e.erro}`}</div>
                 </li>
               ))}
             </ul>
