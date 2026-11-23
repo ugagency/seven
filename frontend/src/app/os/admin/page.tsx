@@ -11,7 +11,10 @@ function Usuarios() {
   const us = useApi<J[]>("/os/admin/usuarios");
   const contas = useApi<J[]>("/os/admin/contas");
   const acao = useAcao();
-  const [novo, setNovo] = useState<J>({ email: "", nome: "", perfil: "cotacao", contas: [] as number[], ativo: true });
+  const vazio = { email: "", nome: "", perfil: "cotacao", contas: [] as number[], ativo: true, convite: "link" };
+  const [novo, setNovo] = useState<J>(vazio);
+  const [criado, setCriado] = useState<J | null>(null);
+  const [copiado, setCopiado] = useState(false);
   const alterar = (uid: string, corpo: J) => acao.rodar(async () => { await api(`/os/admin/usuarios/${uid}`, { metodo: "PATCH", corpo }); us.recarregar(); });
   const troca = (lista: number[], id: number) => (lista.includes(id) ? lista.filter((x) => x !== id) : [...lista, id]);
   const ativas = (contas.dados || []).filter((c) => c.ativa);
@@ -42,6 +45,7 @@ function Usuarios() {
                     <td className={td}>
                       {u.user_id === eu.id ? <Etiqueta tom="info">você</Etiqueta> : <Botao variante={u.ativo ? "secundario" : "primario"} disabled={acao.ocupado} onClick={() => alterar(u.user_id, { ativo: !u.ativo })}>{u.ativo ? "Desativar" : "Ativar"}</Botao>}
                       {!u.ativo && <> <Etiqueta>inativo</Etiqueta></>}
+                      {u.user_id !== eu.id && <Botao variante="texto" disabled={acao.ocupado} onClick={() => { setCopiado(false); acao.rodar(async () => { const r = await api<J>(`/os/admin/usuarios/${u.user_id}/link-acesso`, { metodo: "POST", corpo: { convite: "link" } }); setCriado({ ...r, reenvio: true }); }); }}>Novo link de acesso</Botao>}
                     </td>
                   </tr>
                 ))}
@@ -51,14 +55,43 @@ function Usuarios() {
         </Estado>
       </Cartao>
       <Cartao titulo="Dar acesso a uma pessoa">
-        <p className="mb-3 text-[14px] text-[#667085]">A pessoa precisa já ter login no sistema. O convite por e-mail ainda não está disponível.</p>
-        <form onSubmit={(e) => { e.preventDefault(); acao.rodar(async () => { await api("/os/admin/usuarios", { metodo: "POST", corpo: novo }); setNovo({ email: "", nome: "", perfil: "cotacao", contas: [], ativo: true }); us.recarregar(); }); }} className="grid gap-2 md:grid-cols-4">
-          <Campo rotulo="E-mail do login"><input required type="email" className={campoCls} value={novo.email} onChange={(e) => setNovo({ ...novo, email: e.target.value })} /></Campo>
+        <p className="mb-4 text-[14px] text-[#667085]">Se a pessoa ainda não tem login, o sistema cria o convite. Ela entra pelo link, define a própria senha e já cai no Seven OS com o perfil escolhido.</p>
+        <form onSubmit={(e) => { e.preventDefault(); setCriado(null); setCopiado(false); acao.rodar(async () => { const r = await api<J>("/os/admin/usuarios", { metodo: "POST", corpo: novo }); setCriado(r); setNovo(vazio); us.recarregar(); }); }} className="grid gap-4 md:grid-cols-4">
+          <Campo rotulo="E-mail"><input required type="email" className={campoCls} value={novo.email} onChange={(e) => setNovo({ ...novo, email: e.target.value })} /></Campo>
           <Campo rotulo="Nome"><input className={campoCls} value={novo.nome} onChange={(e) => setNovo({ ...novo, nome: e.target.value })} /></Campo>
           <Campo rotulo="Perfil"><select className={campoCls} value={novo.perfil} onChange={(e) => setNovo({ ...novo, perfil: e.target.value })}>{Object.entries(PERFIS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></Campo>
-          <div><span className="mb-1 block text-[12px] font-medium text-[#667085]">CNPJs</span><div className="flex flex-wrap gap-3 py-1.5">{ativas.map((c) => <label key={c.id} className="flex items-center gap-1.5 text-[14px]"><input type="checkbox" checked={novo.contas.includes(c.id)} onChange={() => setNovo({ ...novo, contas: troca(novo.contas, c.id) })} /> {c.nome}</label>)}</div></div>
-          <div><Botao type="submit" variante="primario" disabled={acao.ocupado}>Dar acesso</Botao></div>
+          <div><span className="mb-1.5 block text-[13px] font-medium text-[#667085]">CNPJs</span><div className="flex flex-wrap gap-3 py-2">{ativas.map((c) => <label key={c.id} className="flex items-center gap-1.5 text-[14px]"><input type="checkbox" checked={novo.contas.includes(c.id)} onChange={() => setNovo({ ...novo, contas: troca(novo.contas, c.id) })} /> {c.nome}</label>)}</div></div>
+          <fieldset className="md:col-span-3">
+            <legend className="mb-1.5 text-[13px] font-medium text-[#667085]">Se ainda não tiver login, como enviar o convite</legend>
+            <div className="flex flex-wrap gap-2">
+              {[["link", "Gerar link para eu enviar", "você manda por WhatsApp ou e-mail"], ["email", "Supabase envia por e-mail", "depende do e-mail do Supabase configurado"]].map(([v, t, sub]) => (
+                <label key={v} className={`flex cursor-pointer items-start gap-2.5 rounded-lg border px-3.5 py-2.5 text-[14px] ${novo.convite === v ? "border-[#00A99D] bg-[#ECFDF9]" : "border-[#D0D5DD] bg-white hover:bg-[#F8F9FB]"}`}>
+                  <input type="radio" name="convite" className="mt-1" checked={novo.convite === v} onChange={() => setNovo({ ...novo, convite: v })} />
+                  <span><span className="block font-medium">{t}</span><span className="block text-[12px] text-[#667085]">{sub}</span></span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <div className="flex items-end"><Botao type="submit" variante="primario" disabled={acao.ocupado}>{acao.ocupado ? "Enviando…" : "Dar acesso"}</Botao></div>
         </form>
+        {criado && (
+          <div className="mt-5">
+            {criado.link_convite ? (
+              <Aviso tom="bom">
+                <p className="font-medium">{criado.reenvio ? `Link novo para ${criado.email} definir a senha:` : `Acesso criado para ${criado.email}. Envie este link para a pessoa definir a senha:`}</p>
+                <div className="mt-2 flex gap-2">
+                  <input readOnly aria-label="Link do convite" className={`${campoCls} mono text-[12px]`} value={criado.link_convite} onFocus={(e) => e.target.select()} />
+                  <Botao onClick={async () => { try { await navigator.clipboard.writeText(criado.link_convite); setCopiado(true); } catch { setCopiado(false); } }}>{copiado ? "Copiado" : "Copiar"}</Botao>
+                </div>
+                <p className="mt-2 text-[12px]">O link vale por tempo limitado e só funciona uma vez. Ele não fica guardado no sistema: copie agora. Se expirar, use &ldquo;Novo link de acesso&rdquo; na lista acima. Serve também para quem esqueceu a senha.</p>
+              </Aviso>
+            ) : criado.convite === "email" ? (
+              <Aviso tom="bom">Acesso criado. O Supabase enviou o convite para {criado.email}. Se não chegar em alguns minutos, olhe o spam ou gere um link.</Aviso>
+            ) : (
+              <Aviso tom="bom">Acesso liberado para {criado.email}. A pessoa já tinha login: é só entrar com a senha dela.</Aviso>
+            )}
+          </div>
+        )}
       </Cartao>
     </div>
   );
