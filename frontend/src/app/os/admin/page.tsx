@@ -45,7 +45,7 @@ function Usuarios() {
                     <td className={td}>
                       {u.user_id === eu.id ? <Etiqueta tom="info">você</Etiqueta> : <Botao variante={u.ativo ? "secundario" : "primario"} disabled={acao.ocupado} onClick={() => alterar(u.user_id, { ativo: !u.ativo })}>{u.ativo ? "Desativar" : "Ativar"}</Botao>}
                       {!u.ativo && <> <Etiqueta>inativo</Etiqueta></>}
-                      {u.user_id !== eu.id && <Botao variante="texto" disabled={acao.ocupado} onClick={() => { setCopiado(false); acao.rodar(async () => { const r = await api<J>(`/os/admin/usuarios/${u.user_id}/link-acesso`, { metodo: "POST", corpo: { convite: "link" } }); setCriado({ ...r, reenvio: true }); }); }}>Novo link de acesso</Botao>}
+                      {u.user_id !== eu.id && (["link", "email"] as const).map((modo) => <Botao key={modo} variante="texto" disabled={acao.ocupado} onClick={() => { setCopiado(false); acao.rodar(async () => { const r = await api<J>(`/os/admin/usuarios/${u.user_id}/link-acesso`, { metodo: "POST", corpo: { convite: modo } }); setCriado({ ...r, reenvio: true }); }); }}>{modo === "link" ? "Novo link de acesso" : "Enviar acesso por e-mail"}</Botao>)}
                     </td>
                   </tr>
                 ))}
@@ -86,7 +86,7 @@ function Usuarios() {
                 <p className="mt-2 text-[12px]">O link vale por tempo limitado e só funciona uma vez. Ele não fica guardado no sistema: copie agora. Se expirar, use &ldquo;Novo link de acesso&rdquo; na lista acima. Serve também para quem esqueceu a senha.</p>
               </Aviso>
             ) : criado.convite === "email" ? (
-              <Aviso tom="bom">Acesso criado. O Supabase enviou o convite para {criado.email}. Se não chegar em alguns minutos, olhe o spam ou gere um link.</Aviso>
+              <Aviso tom="bom">{criado.reenvio ? "E-mail enviado" : "Acesso criado. Convite enviado"} para {criado.email}, como Seven OS. Se não chegar em alguns minutos, olhe o spam ou gere um link.</Aviso>
             ) : (
               <Aviso tom="bom">Acesso liberado para {criado.email}. A pessoa já tinha login: é só entrar com a senha dela.</Aviso>
             )}
