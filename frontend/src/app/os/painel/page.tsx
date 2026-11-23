@@ -10,12 +10,12 @@ const PERGUNTAS = ["O que encerra até sexta sem fornecedor?", "Quais marcas est
 
 function Bloco({ titulo, sub, link, restrito, children, className = "" }: { titulo: string; sub?: string; link?: string; restrito?: boolean; children: React.ReactNode; className?: string }) {
   return (
-    <section className={`border border-[#DCE0E5] bg-white p-5 ${className}`}>
+    <section className={`rounded-xl border border-[#EAECF0] bg-white p-6 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_1px_3px_rgba(16,24,40,0.05)] ${className}`}>
       <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
         <div className="flex flex-wrap items-baseline gap-x-3">
-          <h3 className="text-[16px] font-bold">{titulo}</h3>
-          {sub && <span className="text-[13px] text-[#5A6573]">{sub}</span>}
-          {restrito && <span className="bg-[#EEF1F4] px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[#334255]">restrito</span>}
+          <h3 className="text-[15px] font-semibold text-[#101828]">{titulo}</h3>
+          {sub && <span className="text-[13px] text-[#667085]">{sub}</span>}
+          {restrito && <span className="rounded-full bg-[#F2F4F7] px-2 py-0.5 text-[11px] font-medium text-[#344054]">restrito</span>}
         </div>
         {link && <Link href={link} className="text-[14px] font-semibold text-[#00756D] hover:underline">Ver itens</Link>}
       </div>
@@ -24,24 +24,24 @@ function Bloco({ titulo, sub, link, restrito, children, className = "" }: { titu
   );
 }
 
-const Grande = ({ v, cor }: { v: string; cor?: string }) => <div className="text-[34px] font-extrabold leading-none tracking-tight tabular-nums" style={{ color: cor }}>{v}</div>;
-const Indisponivel = ({ i }: { i: J }) => <p className="text-[14px] text-[#5A6573]">Indisponível. {i.motivo}</p>;
+const Grande = ({ v, cor }: { v: string; cor?: string }) => <div className="text-[30px] font-semibold leading-none tracking-tight tabular-nums" style={{ color: cor }}>{v}</div>;
+const Indisponivel = ({ i }: { i: J }) => <p className="text-[14px] text-[#667085]">Indisponível. {i.motivo}</p>;
 
 function Barra({ rotulo, sub, pct, cor = "#0B1A2A", valor, href }: { rotulo: string; sub?: string; pct: number; cor?: string; valor: string; href?: string }) {
   const nome = href ? <Link href={href} className="font-semibold hover:underline">{rotulo}</Link> : <span className="font-semibold">{rotulo}</span>;
   return (
     <div>
       <div className="flex items-baseline justify-between gap-2 text-[14px]">
-        <span>{nome} {sub && <span className="text-[13px] text-[#5A6573]">{sub}</span>}</span>
+        <span>{nome} {sub && <span className="text-[13px] text-[#667085]">{sub}</span>}</span>
         <span className="font-bold tabular-nums">{valor}</span>
       </div>
-      <div className="mt-1.5 h-2.5 bg-[#EEF1F4]"><div className="h-full" style={{ width: `${Math.max(0, Math.min(100, pct))}%`, background: cor }} /></div>
+      <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-[#F2F4F7]"><div className="h-full rounded-full" style={{ width: `${Math.max(0, Math.min(100, pct))}%`, background: cor }} /></div>
     </div>
   );
 }
 
 function Serie({ serie }: { serie: J[] }) {
-  if (!serie.length) return <p className="text-[14px] text-[#5A6573]">Sem captura no período.</p>;
+  if (!serie.length) return <p className="text-[14px] text-[#667085]">Sem captura no período.</p>;
   const max = Math.max(...serie.map((s) => s.linhas));
   return (
     <div>
@@ -51,13 +51,13 @@ function Serie({ serie }: { serie: J[] }) {
           const baixo = s.linhas < max * 0.2;
           return (
             <div key={s.dia} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end" title={`${fmtData(s.dia)}: ${fmtNum(s.linhas)} linhas`}>
-              {serie.length <= 31 && <span className="mb-1 text-[11px] font-semibold tabular-nums text-[#334255]">{fmtNum(s.linhas)}</span>}
-              <div className="w-full" style={{ height: `max(4px, calc(${(100 * s.linhas) / max}% - 16px))`, background: ultimo ? "#00A99D" : baixo ? "#E0A33A" : "#0B1A2A" }} />
+              {serie.length <= 31 && <span className="mb-1 text-[11px] font-semibold tabular-nums text-[#344054]">{fmtNum(s.linhas)}</span>}
+              <div className="w-full rounded-t-md" style={{ height: `max(4px, calc(${(100 * s.linhas) / max}% - 16px))`, background: ultimo ? "#00A99D" : baixo ? "#F5C77E" : "#1E3550" }} />
             </div>
           );
         })}
       </div>
-      <div className="mono mt-2 flex justify-between text-[11px] text-[#5A6573]"><span>{fmtData(serie[0].dia)}</span><span>{fmtData(serie[serie.length - 1].dia)}</span></div>
+      <div className="mono mt-2 flex justify-between text-[11px] text-[#667085]"><span>{fmtData(serie[0].dia)}</span><span>{fmtData(serie[serie.length - 1].dia)}</span></div>
     </div>
   );
 }
@@ -82,16 +82,16 @@ export default function Painel() {
         Painel
       </Titulo>
 
-      <form onSubmit={(e) => { e.preventDefault(); perguntar(pergunta); }} className="mb-8 border-2 border-[#0B1A2A] bg-white p-5">
+      <form onSubmit={(e) => { e.preventDefault(); perguntar(pergunta); }} className="mb-8 rounded-2xl border border-[#EAECF0] shadow-[0_1px_2px_rgba(16,24,40,0.04),0_1px_3px_rgba(16,24,40,0.05)] bg-white p-5">
         <div className="flex gap-3">
           <div className="relative flex-1">
             <MessageSquare className="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-[#00A99D]" aria-hidden />
             <input aria-label="Pergunta ao assistente" className={`${campoCls} h-[44px] pl-10 text-[15px]`} placeholder="Pergunte ao assistente sobre produto, fornecedor, preço ou prazo" value={pergunta} onChange={(e) => setPergunta(e.target.value)} />
           </div>
-          <button type="submit" className="flex h-[44px] items-center gap-2 bg-[#0B1A2A] px-5 text-[15px] font-semibold text-white hover:bg-[#1E3550]">Perguntar <Send className="h-4 w-4" aria-hidden /></button>
+          <button type="submit" className="flex h-[44px] items-center gap-2 rounded-lg bg-[#0B1A2A] px-5 text-[15px] font-semibold text-white hover:bg-[#1E3550]">Perguntar <Send className="h-4 w-4" aria-hidden /></button>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
-          {PERGUNTAS.map((p) => <button key={p} type="button" onClick={() => perguntar(p)} className="border border-[#C9D0D8] px-3 py-1.5 text-[13px] hover:border-[#0B1A2A]">{p}</button>)}
+          {PERGUNTAS.map((p) => <button key={p} type="button" onClick={() => perguntar(p)} className="rounded-full border border-[#D0D5DD] bg-white px-3.5 py-1.5 text-[13px] text-[#344054] hover:border-[#98A2B3] hover:bg-[#F8F9FB]">{p}</button>)}
         </div>
       </form>
 
@@ -102,7 +102,7 @@ export default function Painel() {
             {ind.capturados && (
               <Bloco titulo="Itens capturados por dia" sub={`${fmtNum(ind.capturados.valor)} linhas em ${ind.capturados.serie.length} dias`} link="/os/captura">
                 <Serie serie={ind.capturados.serie} />
-                <p className="mt-3 text-[13px] text-[#5A6573]">Última captura: {ind.capturados.ultima_captura ? fmtDataHora(ind.capturados.ultima_captura) : "nenhuma"}{ind.capturados.falhas > 0 && <span className="font-semibold text-[#B42318]"> · {ind.capturados.falhas} falha(s) no período</span>}. Barra laranja: dia com captura muito abaixo do normal.</p>
+                <p className="mt-3 text-[13px] text-[#667085]">Última captura: {ind.capturados.ultima_captura ? fmtDataHora(ind.capturados.ultima_captura) : "nenhuma"}{ind.capturados.falhas > 0 && <span className="font-semibold text-[#B42318]"> · {ind.capturados.falhas} falha(s) no período</span>}. Barra laranja: dia com captura muito abaixo do normal.</p>
               </Bloco>
             )}
             {ind.identificacao && (
@@ -112,7 +112,7 @@ export default function Painel() {
                     {ind.identificacao.tabela.slice(0, 5).map((t: J) => (
                       <Barra key={t.prefixo} rotulo={t.prefixo === "sem codigo" ? "sem código" : `${t.prefixo}…`} sub={`${fmtNum(t.linhas)} linhas`} pct={t.pct_certeza} cor={t.pct_certeza < 50 ? "#E0A33A" : "#0B1A2A"} valor={`${fmtNum(t.pct_certeza, 0)}%`} />
                     ))}
-                    <p className="text-[13px] text-[#5A6573]">Percentual identificado com certeza. O restante vai para a conferência manual.</p>
+                    <p className="text-[13px] text-[#667085]">Percentual identificado com certeza. O restante vai para a conferência manual.</p>
                   </div>
                 ) : <Indisponivel i={ind.identificacao} />}
               </Bloco>
@@ -130,7 +130,7 @@ export default function Painel() {
             {ind.encerra_48h && (
               <Bloco titulo="Encerra nas próximas 48h" link="/os?prazo=48h">
                 <Grande v={fmtNum(ind.encerra_48h.valor)} cor="#B42318" />
-                <p className="mt-2 text-[13px] text-[#5A6573]">itens a cotar ou em cotação com prazo curto</p>
+                <p className="mt-2 text-[13px] text-[#667085]">itens a cotar ou em cotação com prazo curto</p>
               </Bloco>
             )}
           </div>
@@ -138,47 +138,47 @@ export default function Painel() {
           <Secao titulo="Comercial" sub="onde está o dinheiro e onde estamos perdendo" />
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
             {ind.marcas_sem_fornecedor && (
-              <section className="border border-[#DCE0E5] bg-white">
-                <div className="px-5 pb-3 pt-5"><h3 className="text-[16px] font-bold">Marcas recorrentes sem fornecedor vinculado</h3><p className="text-[13px] text-[#5A6573]">{ind.marcas_sem_fornecedor.detalhe}</p></div>
+              <section className="rounded-xl border border-[#EAECF0] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_1px_3px_rgba(16,24,40,0.05)]">
+                <div className="px-6 pb-3 pt-6"><h3 className="text-[15px] font-semibold">Marcas recorrentes sem fornecedor vinculado</h3><p className="text-[13px] text-[#667085]">{ind.marcas_sem_fornecedor.detalhe}</p></div>
                 {ind.marcas_sem_fornecedor.tabela.length ? (
                   <table className="w-full border-collapse">
                     <thead className={theadCls}><tr><th className={th}>Marca</th><th className={`${th} text-right`}>Itens abertos</th><th className={th}></th></tr></thead>
                     <tbody>
                       {ind.marcas_sem_fornecedor.tabela.slice(0, 10).map((t: J) => (
-                        <tr key={t.marca} className="border-b border-[#E6E9ED] last:border-0">
-                          <td className="mono px-5 py-3 text-[13px] font-semibold">{t.marca}</td>
+                        <tr key={t.marca} className="border-b border-[#F0F2F5] last:border-0">
+                          <td className="px-6 py-3 text-[14px] font-medium">{t.marca}</td>
                           <td className="px-5 py-3 text-right text-[14px] font-semibold tabular-nums">{t.itens}</td>
-                          <td className="px-5 py-2.5 text-right"><Link href={`/os?busca=${encodeURIComponent(t.marca)}&sem_fornecedor=1`} className="inline-flex h-8 items-center border border-[#0B1A2A] px-3 text-[13px] font-semibold hover:bg-[#F6F8FA]">Ver itens</Link></td>
+                          <td className="px-5 py-2.5 text-right"><Link href={`/os?busca=${encodeURIComponent(t.marca)}&sem_fornecedor=1`} className="inline-flex h-8 items-center rounded-lg border border-[#D0D5DD] px-3 text-[13px] font-medium text-[#344054] hover:bg-[#F8F9FB]">Ver itens</Link></td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
-                ) : <p className="px-5 pb-5 text-[14px] text-[#5A6573]">Nenhuma marca recorrente sem fornecedor.</p>}
+                ) : <p className="px-5 pb-5 text-[14px] text-[#667085]">Nenhuma marca recorrente sem fornecedor.</p>}
               </section>
             )}
             <div className="space-y-5">
               {ind.declinio && (
                 <Bloco titulo="Taxa de declínio" sub="itens que a equipe decidiu não cotar" link="/os?situacao=todos&andamento=declinada">
-                  {ind.declinio.disponivel ? <><Grande v={`${fmtNum(ind.declinio.valor, 1)}%`} /><p className="mt-2 text-[13px] text-[#5A6573]">{ind.declinio.detalhe}</p></> : <Indisponivel i={ind.declinio} />}
+                  {ind.declinio.disponivel ? <><Grande v={`${fmtNum(ind.declinio.valor, 1)}%`} /><p className="mt-2 text-[13px] text-[#667085]">{ind.declinio.detalhe}</p></> : <Indisponivel i={ind.declinio} />}
                 </Bloco>
               )}
               {ind.valor_aberto && (
                 <Bloco titulo="Valor em aberto" restrito link="/os?ordem=valor">
-                  {ind.valor_aberto.disponivel ? <><Grande v={fmtReais(ind.valor_aberto.valor)} /><p className="mt-2 text-[13px] text-[#5A6573]">{ind.valor_aberto.detalhe}</p></> : <Indisponivel i={ind.valor_aberto} />}
+                  {ind.valor_aberto.disponivel ? <><Grande v={fmtReais(ind.valor_aberto.valor)} /><p className="mt-2 text-[13px] text-[#667085]">{ind.valor_aberto.detalhe}</p></> : <Indisponivel i={ind.valor_aberto} />}
                 </Bloco>
               )}
             </div>
           </div>
           {(ind.margem || ind.divergencias || ind.vitoria) && (
             <div className="mt-5 grid gap-5 md:grid-cols-3">
-              {ind.margem && <Bloco titulo="Margem praticada" restrito>{ind.margem.disponivel ? <><Grande v={`${fmtNum(ind.margem.valor, 1)}%`} /><p className="mt-2 text-[13px] text-[#5A6573]">{ind.margem.detalhe}</p></> : <Indisponivel i={ind.margem} />}</Bloco>}
+              {ind.margem && <Bloco titulo="Margem praticada" restrito>{ind.margem.disponivel ? <><Grande v={`${fmtNum(ind.margem.valor, 1)}%`} /><p className="mt-2 text-[13px] text-[#667085]">{ind.margem.detalhe}</p></> : <Indisponivel i={ind.margem} />}</Bloco>}
               {ind.divergencias && (
                 <Bloco titulo="Divergências abertas" restrito link={ind.divergencias.link}>
                   <Grande v={fmtNum(ind.divergencias.valor)} cor={ind.divergencias.valor ? "#7A5210" : undefined} />
                   {ind.divergencias.tabela.map((t: J) => <div key={t.tipo} className="mt-2 flex justify-between text-[14px]"><span>{({ parece_total: "Parece total", divergente: "Preço divergente", sem_preco: "Sem preço" } as J)[t.tipo]}</span><span className="font-semibold">{t.n}</span></div>)}
                 </Bloco>
               )}
-              {ind.vitoria && <Bloco titulo="Taxa de vitória" restrito>{ind.vitoria.disponivel ? <><Grande v={`${fmtNum(ind.vitoria.valor, 1)}%`} /><p className="mt-2 text-[13px] text-[#5A6573]">{ind.vitoria.detalhe}</p></> : <Indisponivel i={ind.vitoria} />}</Bloco>}
+              {ind.vitoria && <Bloco titulo="Taxa de vitória" restrito>{ind.vitoria.disponivel ? <><Grande v={`${fmtNum(ind.vitoria.valor, 1)}%`} /><p className="mt-2 text-[13px] text-[#667085]">{ind.vitoria.detalhe}</p></> : <Indisponivel i={ind.vitoria} />}</Bloco>}
             </div>
           )}
           <p className="mt-6"><Rotulo>Os números vêm só do que está registrado no sistema</Rotulo></p>

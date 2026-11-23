@@ -22,17 +22,17 @@ export default function Auditoria() {
         <input aria-label="Até" type="date" className={campoCls} value={f.ate} onChange={(e) => muda({ ate: e.target.value })} />
         <Botao type="submit">Filtrar</Botao>
       </form>
-      <div className="overflow-x-auto border border-[#DCE0E5] bg-white">
+      <div className="overflow-x-auto rounded-xl border border-[#EAECF0] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_1px_3px_rgba(16,24,40,0.05)]">
         <Estado erro={erro} carregando={carregando && !dados} vazio={dados && !dados.registros.length && "Nenhum registro com esses filtros."}>
           <table className="w-full min-w-[860px]">
-            <thead className="border-b border-[#DCE0E5] bg-[#F6F8FA]"><tr><th className={th}>Quando</th><th className={th}>Quem</th><th className={th}>O que</th><th className={th}>Antes</th><th className={th}>Depois</th></tr></thead>
+            <thead className="border-b border-[#EAECF0] bg-[#F8F9FB]"><tr><th className={th}>Quando</th><th className={th}>Quem</th><th className={th}>O que</th><th className={th}>Antes</th><th className={th}>Depois</th></tr></thead>
             <tbody>
               {dados?.registros.map((r: J) => (
-                <tr key={r.id} className="border-b border-[#E6E9ED] last:border-0">
+                <tr key={r.id} className="border-b border-[#F0F2F5] last:border-0">
                   <td className={`${td} whitespace-nowrap`}>{fmtDataHora(r.em)}</td>
                   <td className={td}>{r.autor}{r.origem === "suporte" && <> <Etiqueta tom="info">suporte</Etiqueta></>}</td>
-                  <td className={td}>{ACOES[r.acao] || r.acao} <span className="font-medium">{r.entidade}</span> {r.entidade_id && <span className="text-[12px] text-[#5A6573]">#{r.entidade_id}</span>}{r.justificativa && <div className="text-[12px] text-[#5A6573]">Justificativa: {r.justificativa}</div>}</td>
-                  {r.oculto ? <td colSpan={2} className={`${td} text-[#8A94A0]`}>valores não visíveis para o seu perfil</td> : <><td className={`${td} max-w-xs break-words text-[12px] text-[#5A6573]`}>{resumo(r.antes)}</td><td className={`${td} max-w-sm break-words text-[12px] text-[#5A6573]`}>{resumo(r.depois)}</td></>}
+                  <td className={td}>{ACOES[r.acao] || r.acao} <span className="font-medium">{r.entidade}</span> {r.entidade_id && <span className="text-[12px] text-[#667085]">#{r.entidade_id}</span>}{r.justificativa && <div className="text-[12px] text-[#667085]">Justificativa: {r.justificativa}</div>}</td>
+                  {r.oculto ? <td colSpan={2} className={`${td} text-[#98A2B3]`}>valores não visíveis para o seu perfil</td> : <><td className={`${td} max-w-xs break-words text-[12px] text-[#667085]`}>{resumo(r.antes)}</td><td className={`${td} max-w-sm break-words text-[12px] text-[#667085]`}>{resumo(r.depois)}</td></>}
                 </tr>
               ))}
             </tbody>

@@ -22,10 +22,10 @@ function Valores({ v }: { v: J }) {
     "preco_venda" in v && ["Venda", fmtReais(v.preco_venda)],
     "margem_pct" in v && v.margem_pct != null && ["Margem", `${fmtNum(v.margem_pct, 1)}%`],
   ].filter(Boolean) as string[][];
-  if (!partes.length) return <span className="text-[#8A94A0]">valores não visíveis para o seu perfil</span>;
+  if (!partes.length) return <span className="text-[#98A2B3]">valores não visíveis para o seu perfil</span>;
   return (
     <span className="flex flex-wrap gap-x-4 gap-y-0.5 tabular-nums">
-      {partes.map(([k, val]) => <span key={k}><span className="text-[12px] text-[#5A6573]">{k}</span> {val || "–"}</span>)}
+      {partes.map(([k, val]) => <span key={k}><span className="text-[12px] text-[#667085]">{k}</span> {val || "–"}</span>)}
     </span>
   );
 }
@@ -94,12 +94,12 @@ export default function Ficha() {
     <div>
       <Link href="/os" className="inline-flex items-center gap-2 text-[14px] font-semibold text-[#00756D] hover:underline"><ArrowLeft className="h-4 w-4" aria-hidden /> Fila de cotações</Link>
 
-      <div className="mt-4 border-b-2 border-[#0B1A2A] pb-5">
+      <div className="mt-4 border-b border-[#EAECF0] pb-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
-            <h1 className="text-[28px] font-extrabold leading-tight tracking-[-0.01em]">
+            <h1 className="text-[26px] font-semibold leading-tight tracking-[-0.01em]">
               {produto.nome}{" "}
-              {(produto.fabricante || produto.referencia) && <span className="mono align-middle text-[16px] font-normal text-[#334255]">{[produto.fabricante, produto.referencia].filter(Boolean).join(" / ")}</span>}
+              {(produto.fabricante || produto.referencia) && <span className="mono align-middle text-[16px] font-normal text-[#344054]">{[produto.fabricante, produto.referencia].filter(Boolean).join(" / ")}</span>}
             </h1>
             <div className="mt-3 flex flex-wrap items-center gap-2 text-[14px]">
               <Etiqueta tom={tomNivel(produto.nivel)}>Identidade: {NIVEIS[produto.nivel].toLowerCase()}</Etiqueta>
@@ -107,11 +107,11 @@ export default function Ficha() {
               {d.codigos.length > 3 && <Etiqueta tom="contorno">+{d.codigos.length - 3} códigos</Etiqueta>}
               <Etiqueta>{d.ocorrencias} ocorrência{d.ocorrencias > 1 ? "s" : ""}</Etiqueta>
               {item.expirado ? <Etiqueta tom="ruim">Expirada</Etiqueta> : item.andamento !== "a_cotar" ? <Etiqueta tom={tomAndamento(item.andamento)}>{ANDAMENTOS[item.andamento]}</Etiqueta> : <EtiquetaAba aba={item.aba} />}
-              <span className="text-[#334255]">
+              <span className="text-[#344054]">
                 {item.uf || "UF não informada"} · {fmtNum(item.quantidade)} {unidade} · encerra <span className={`font-semibold ${urgente || item.expirado ? "text-[#B42318]" : ""}`}>{fmtData(item.prazo)}</span> ({textoPrazo(item.prazo)})
               </span>
             </div>
-            <p className="mt-2 text-[13px] text-[#5A6573]">Evento {item.numero_evento} · {d.contas.map((c: J) => c.nome).join(" e ")}{item.linhas > 1 && ` · ${item.linhas} linhas deste produto no evento (quantidade somada)`}{item.responsavel && ` · em cotação por ${item.responsavel}`}</p>
+            <p className="mt-2 text-[13px] text-[#667085]">Evento {item.numero_evento} · {d.contas.map((c: J) => c.nome).join(" e ")}{item.linhas > 1 && ` · ${item.linhas} linhas deste produto no evento (quantidade somada)`}{item.responsavel && ` · em cotação por ${item.responsavel}`}</p>
           </div>
           {podeCotar && (
             <div className="flex flex-wrap gap-2">
@@ -123,12 +123,12 @@ export default function Ficha() {
           )}
         </div>
         {declinando && (
-          <form onSubmit={(e) => { e.preventDefault(); andamento("declinada", motivo); }} className="mt-4 flex flex-wrap items-end gap-2 border border-[#DCE0E5] bg-white p-4">
+          <form onSubmit={(e) => { e.preventDefault(); andamento("declinada", motivo); }} className="mt-4 flex flex-wrap items-end gap-2 rounded-xl border border-[#EAECF0] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_1px_3px_rgba(16,24,40,0.05)] p-4">
             <div className="min-w-64 flex-1"><Campo rotulo="Motivo do declínio (fica guardado para análise)"><input autoFocus required className={campoCls} value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Ex.: sem fornecedor, prazo curto, fora do portfólio" /></Campo></div>
             <Botao type="submit" variante="perigo" disabled={acao.ocupado}>Confirmar declínio</Botao>
           </form>
         )}
-        {produto.descricao && <p className="mono mt-4 text-[12.5px] leading-relaxed text-[#334255]">{produto.descricao}</p>}
+        {produto.descricao && <p className="mono mt-4 text-[12.5px] leading-relaxed text-[#344054]">{produto.descricao}</p>}
         {d.linhas[0]?.link_evento && <a href={d.linhas[0].link_evento} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1.5 text-[14px] font-semibold text-[#00756D] hover:underline"><ExternalLink className="h-4 w-4" aria-hidden /> Abrir o evento no Coupa</a>}
       </div>
       {acao.erro && <div className="mt-4"><Aviso tom="ruim">{acao.erro}</Aviso></div>}
@@ -140,21 +140,21 @@ export default function Ficha() {
               {forn.dados?.vinculados.length ? (
                 <div className="space-y-4">
                   {forn.dados.vinculados.map((f: J) => (
-                    <div key={f.id} className="border border-[#DCE0E5] border-t-2 border-t-[#0B1A2A] p-4">
+                    <div key={f.id} className="rounded-lg border border-[#EAECF0] p-4">
                       <div className="text-[16px] font-bold">{f.nome}</div>
-                      <div className="text-[13px] text-[#5A6573]">{[[f.cidade, f.uf].filter(Boolean).join(" · "), f.contato, f.telefone, f.email].filter(Boolean).join(" · ") || "sem contato cadastrado"}</div>
-                      <div className="mt-3 grid grid-cols-2 gap-4 border-y border-[#E6E9ED] py-3">
+                      <div className="text-[13px] text-[#667085]">{[[f.cidade, f.uf].filter(Boolean).join(" · "), f.contato, f.telefone, f.email].filter(Boolean).join(" · ") || "sem contato cadastrado"}</div>
+                      <div className="mt-3 grid grid-cols-2 gap-4 border-y border-[#F0F2F5] py-3">
                         <div>
                           <Rotulo>Último preço</Rotulo>
                           {"ultimo_preco" in f ? (f.ultimo_preco != null
-                            ? <><div className="mt-1 text-[17px] font-bold tabular-nums">{fmtReais(f.ultimo_preco)}</div><div className="text-[12px] text-[#5A6573]">{fmtData(f.ultimo_preco_em)}</div></>
-                            : <div className="mt-1 text-[14px] text-[#5A6573]">sem preço registrado</div>)
-                            : <div className="mt-1 text-[14px] text-[#8A94A0]">não visível no seu perfil</div>}
+                            ? <><div className="mt-1 text-[17px] font-bold tabular-nums">{fmtReais(f.ultimo_preco)}</div><div className="text-[12px] text-[#667085]">{fmtData(f.ultimo_preco_em)}</div></>
+                            : <div className="mt-1 text-[14px] text-[#667085]">sem preço registrado</div>)
+                            : <div className="mt-1 text-[14px] text-[#98A2B3]">não visível no seu perfil</div>}
                         </div>
                         <div>
                           <Rotulo>Cotações ganhas</Rotulo>
                           <div className="mt-1 text-[17px] font-bold tabular-nums">{f.ganhas}</div>
-                          <div className="text-[12px] text-[#5A6573]">origem: {ORIGENS[f.origem] || f.origem}</div>
+                          <div className="text-[12px] text-[#667085]">origem: {ORIGENS[f.origem] || f.origem}</div>
                         </div>
                       </div>
                       {podeVincular && (
@@ -166,10 +166,10 @@ export default function Ficha() {
                     </div>
                   ))}
                 </div>
-              ) : <p className="text-[14px] text-[#5A6573]">Nenhum fornecedor vinculado a este produto ainda.</p>}
+              ) : <p className="text-[14px] text-[#667085]">Nenhum fornecedor vinculado a este produto ainda.</p>}
 
               {(forn.dados?.sugestoes.length ?? 0) > 0 && (
-                <div className="mt-4 bg-[#FDF4E3] p-4">
+                <div className="mt-4 rounded-lg bg-[#FFFAEB] p-4">
                   <Rotulo className="text-[#7A5210]">Sugestões · confirme antes de usar</Rotulo>
                   <ul className="mt-2 space-y-2">
                     {forn.dados!.sugestoes.map((s: J) => (
@@ -190,22 +190,22 @@ export default function Ficha() {
               {podeVincular && (
                 <div className="mt-4">
                   <div className="relative">
-                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#5A6573]" aria-hidden />
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#667085]" aria-hidden />
                     <input aria-label="Buscar fornecedor para vincular" className={`${campoCls} pl-9`} placeholder="Buscar outros fornecedores para vincular" value={buscaF} onChange={(e) => setBuscaF(e.target.value)} />
                   </div>
                   {buscaF.trim().length >= 2 && (
                     <ul className="max-h-44 overflow-auto border border-t-0 border-[#C9D0D8]">
                       {(achados.dados?.fornecedores || []).filter((f: J) => !forn.dados?.vinculados.some((v: J) => v.id === f.id)).map((f: J) => (
-                        <li key={f.id}><button className="w-full px-3 py-2 text-left text-[14px] hover:bg-[#F6F8FA]" onClick={() => acao.rodar(async () => { await api(`/os/produtos/${pid}/fornecedores`, { metodo: "POST", corpo: { fornecedor_id: f.id, origem: "equipe" } }); setBuscaF(""); tudo(); })}>{f.nome} <span className="text-[12px] text-[#5A6573]">{[f.cidade, f.uf].filter(Boolean).join(" · ")}</span></button></li>
+                        <li key={f.id}><button className="w-full px-3 py-2 text-left text-[14px] hover:bg-[#F8F9FB]" onClick={() => acao.rodar(async () => { await api(`/os/produtos/${pid}/fornecedores`, { metodo: "POST", corpo: { fornecedor_id: f.id, origem: "equipe" } }); setBuscaF(""); tudo(); })}>{f.nome} <span className="text-[12px] text-[#667085]">{[f.cidade, f.uf].filter(Boolean).join(" · ")}</span></button></li>
                       ))}
-                      {achados.dados && !achados.dados.fornecedores.length && <li className="px-3 py-2 text-[14px] text-[#5A6573]">Nenhum cadastro com esse nome. <Link href="/os/fornecedores" className="font-semibold text-[#00756D] hover:underline">Cadastrar fornecedor</Link></li>}
+                      {achados.dados && !achados.dados.fornecedores.length && <li className="px-3 py-2 text-[14px] text-[#667085]">Nenhum cadastro com esse nome. <Link href="/os/fornecedores" className="font-semibold text-[#00756D] hover:underline">Cadastrar fornecedor</Link></li>}
                     </ul>
                   )}
                 </div>
               )}
 
               {email && (
-                <div className="mt-4 border border-[#DCE0E5] border-t-2 border-t-[#0B1A2A] p-4">
+                <div className="rounded-lg mt-4 border border-[#EAECF0] p-4">
                   <div className="mb-3 text-[15px] font-bold">Pedido de cotação para {email.fornecedor.nome}</div>
                   <div className="space-y-3">
                     <Campo rotulo="Assunto"><input className={campoCls} value={email.assunto} onChange={(e) => setEmail({ ...email, assunto: e.target.value })} /></Campo>
@@ -219,7 +219,7 @@ export default function Ficha() {
                 </div>
               )}
               {sol.dados && sol.dados.length > 0 && (
-                <p className="mt-3 text-[12px] text-[#5A6573]">Pedidos registrados: {sol.dados.map((s) => `${s.fornecedor} em ${fmtDataHora(s.enviada_em)} por ${s.por || "?"}`).join("; ")}.</p>
+                <p className="mt-3 text-[12px] text-[#667085]">Pedidos registrados: {sol.dados.map((s) => `${s.fornecedor} em ${fmtDataHora(s.enviada_em)} por ${s.por || "?"}`).join("; ")}.</p>
               )}
             </Estado>
           </Cartao>
@@ -231,16 +231,16 @@ export default function Ficha() {
                   <thead className={theadCls}><tr><th className={th}>Data</th><th className={th}>Evento</th><th className={th}>Fornecedor</th><th className={th}>Valores</th><th className={th}>Resultado</th></tr></thead>
                   <tbody>
                     {d.anteriores.map((a: J) => (
-                      <tr key={a.id} className="border-b border-[#E6E9ED] last:border-0">
+                      <tr key={a.id} className="border-b border-[#F0F2F5] last:border-0">
                         <td className={`${td} tabular-nums`}>{fmtData(a.capturado_em)}</td>
-                        <td className={td}><Link href={`/os/item/${a.id}`} className="mono text-[13px] font-medium text-[#00756D] hover:underline">{a.numero_evento}</Link><div className="text-[12px] text-[#5A6573]">{fmtNum(a.quantidade_total)} {unidade}</div></td>
-                        <td className={td}>{a.fornecedor || <span className="text-[#8A94A0]">–</span>}</td>
-                        <td className={td}>{a.cotacao_id ? <Valores v={a.valores} /> : <span className="text-[#8A94A0]">sem cotação registrada</span>}</td>
+                        <td className={td}><Link href={`/os/item/${a.id}`} className="mono text-[13px] font-medium text-[#00756D] hover:underline">{a.numero_evento}</Link><div className="text-[12px] text-[#667085]">{fmtNum(a.quantidade_total)} {unidade}</div></td>
+                        <td className={td}>{a.fornecedor || <span className="text-[#98A2B3]">–</span>}</td>
+                        <td className={td}>{a.cotacao_id ? <Valores v={a.valores} /> : <span className="text-[#98A2B3]">sem cotação registrada</span>}</td>
                         <td className={td}><Etiqueta tom={tomAndamento(a.resultado || a.andamento)}>{ANDAMENTOS[a.resultado || a.andamento]}</Etiqueta></td>
                       </tr>
                     ))}
                     {d.historico_importado.map((h: J, i: number) => (
-                      <tr key={`h${i}`} className="border-b border-[#E6E9ED] last:border-0">
+                      <tr key={`h${i}`} className="border-b border-[#F0F2F5] last:border-0">
                         <td className={`${td} tabular-nums`}>{fmtData(h.data_ref)}</td>
                         <td className={td}><Etiqueta>base da Seven</Etiqueta></td>
                         <td className={td}>{h.fornecedor_texto || "–"}</td>
@@ -251,22 +251,22 @@ export default function Ficha() {
                   </tbody>
                 </table>
               </div>
-            ) : <p className="px-5 py-5 text-[14px] text-[#5A6573]">Primeira aparição deste produto: sem cotação anterior.</p>}
+            ) : <p className="px-5 py-5 text-[14px] text-[#667085]">Primeira aparição deste produto: sem cotação anterior.</p>}
           </Cartao>
 
           <Cartao titulo="Mesma peça, códigos diferentes">
             {["conferir", "nao_identificavel"].includes(produto.nivel) && <div className="mb-3"><Aviso tom="alerta">A descrição não basta para identificar a peça. <Link href="/os/conferencia" className="font-semibold underline">Resolver na conferência manual</Link>.</Aviso></div>}
             <div className="flex flex-wrap gap-1.5">
-              {d.codigos.length ? d.codigos.map((c: J) => <Etiqueta key={c.codigo} tom="contorno" mono>{c.codigo}{c.motivo?.startsWith("juncao") && " · juntado"}</Etiqueta>) : <span className="text-[14px] text-[#5A6573]">Linha capturada sem código Vale.</span>}
+              {d.codigos.length ? d.codigos.map((c: J) => <Etiqueta key={c.codigo} tom="contorno" mono>{c.codigo}{c.motivo?.startsWith("juncao") && " · juntado"}</Etiqueta>) : <span className="text-[14px] text-[#667085]">Linha capturada sem código Vale.</span>}
             </div>
             {d.mesma_referencia.length > 0 && (
               <div className="mt-4">
                 <Rotulo>Mesma referência em outro código</Rotulo>
-                <p className="mt-1 text-[13px] text-[#5A6573]">O sistema não junta sozinho. Confirme só se for a mesma peça física; dá para desfazer.</p>
-                <ul className="mt-2 divide-y divide-[#E6E9ED]">
+                <p className="mt-1 text-[13px] text-[#667085]">O sistema não junta sozinho. Confirme só se for a mesma peça física; dá para desfazer.</p>
+                <ul className="mt-2 divide-y divide-[#F0F2F5]">
                   {d.mesma_referencia.map((p: J) => (
                     <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-[14px]">
-                      <span>{p.nome} <span className="mono text-[12px] text-[#5A6573]">{[p.fabricante, p.referencia].filter(Boolean).join(" / ")} · {(p.codigos || []).join(", ") || "sem código"}</span></span>
+                      <span>{p.nome} <span className="mono text-[12px] text-[#667085]">{[p.fabricante, p.referencia].filter(Boolean).join(" / ")} · {(p.codigos || []).join(", ") || "sem código"}</span></span>
                       {podeResolver && <Botao disabled={acao.ocupado} onClick={() => acao.rodar(async () => { await api(`/os/produtos/${pid}/juntar`, { metodo: "POST", corpo: { origem_id: p.id } }); tudo(); })}>É a mesma peça</Botao>}
                     </li>
                   ))}
@@ -276,10 +276,10 @@ export default function Ficha() {
             {d.juncoes.length > 0 && (
               <div className="mt-4">
                 <Rotulo>Junções feitas</Rotulo>
-                <ul className="mt-2 divide-y divide-[#E6E9ED]">
+                <ul className="mt-2 divide-y divide-[#F0F2F5]">
                   {d.juncoes.map((j: J) => (
                     <li key={j.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-[14px]">
-                      <span>{j.origem_nome} <span className="mono text-[12px] text-[#5A6573]">{(j.codigos || []).join(", ") || "sem código"} · {fmtData(j.em)}</span></span>
+                      <span>{j.origem_nome} <span className="mono text-[12px] text-[#667085]">{(j.codigos || []).join(", ") || "sem código"} · {fmtData(j.em)}</span></span>
                       {podeResolver && <Botao variante="texto" disabled={acao.ocupado} onClick={() => acao.rodar(async () => { await api(`/os/juncoes/${j.id}/desfazer`, { metodo: "POST" }); tudo(); })}>Desfazer</Botao>}
                     </li>
                   ))}
@@ -291,17 +291,17 @@ export default function Ficha() {
           <div className="grid gap-5 md:grid-cols-2">
             <Cartao titulo="Declínios deste produto" sub={String(d.declinios.length)}>
               {d.declinios.length ? (
-                <ul className="divide-y divide-[#E6E9ED] text-[14px]">
-                  {d.declinios.map((x: J, i: number) => <li key={i} className="py-2"><div className="font-semibold">{x.motivo}</div><div className="text-[12px] text-[#5A6573]">evento {x.numero_evento} · {fmtDataHora(x.em)} · {x.por || "?"}</div></li>)}
+                <ul className="divide-y divide-[#F0F2F5] text-[14px]">
+                  {d.declinios.map((x: J, i: number) => <li key={i} className="py-2"><div className="font-semibold">{x.motivo}</div><div className="text-[12px] text-[#667085]">evento {x.numero_evento} · {fmtDataHora(x.em)} · {x.por || "?"}</div></li>)}
                 </ul>
-              ) : <p className="text-[14px] text-[#5A6573]">Nunca declinado.</p>}
+              ) : <p className="text-[14px] text-[#667085]">Nunca declinado.</p>}
             </Cartao>
             <Cartao titulo="Andamento do item">
               {d.andamentos.length ? (
-                <ul className="divide-y divide-[#E6E9ED] text-[14px]">
-                  {d.andamentos.map((x: J, i: number) => <li key={i} className="py-2">{ANDAMENTOS[x.de] || "–"} → <span className="font-semibold">{ANDAMENTOS[x.para]}</span>{x.motivo && `: ${x.motivo}`}<div className="text-[12px] text-[#5A6573]">{fmtDataHora(x.em)} · {x.por || "?"}</div></li>)}
+                <ul className="divide-y divide-[#F0F2F5] text-[14px]">
+                  {d.andamentos.map((x: J, i: number) => <li key={i} className="py-2">{ANDAMENTOS[x.de] || "–"} → <span className="font-semibold">{ANDAMENTOS[x.para]}</span>{x.motivo && `: ${x.motivo}`}<div className="text-[12px] text-[#667085]">{fmtDataHora(x.em)} · {x.por || "?"}</div></li>)}
                 </ul>
-              ) : <p className="text-[14px] text-[#5A6573]">Sem movimentação. Capturado em {fmtDataHora(item.capturado_em)}.</p>}
+              ) : <p className="text-[14px] text-[#667085]">Sem movimentação. Capturado em {fmtDataHora(item.capturado_em)}.</p>}
             </Cartao>
           </div>
         </div>
@@ -310,10 +310,10 @@ export default function Ficha() {
           {cot.dados?.resultado && <Aviso tom={cot.dados.resultado.resultado === "ganha" ? "bom" : "alerta"}>Resultado: {ANDAMENTOS[cot.dados.resultado.resultado]}{cot.dados.resultado.pedido_venda && ` · pedido ${cot.dados.resultado.pedido_venda}`}</Aviso>}
 
           {podeCotar && aceitaCotacao && (
-            <section className="border border-[#DCE0E5] border-t-2 border-t-[#0B1A2A] bg-white">
-              <header className="border-b border-[#E6E9ED] px-5 py-4">
+            <section className="rounded-xl border border-[#EAECF0] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_1px_3px_rgba(16,24,40,0.05)]">
+              <header className="border-b border-[#F0F2F5] px-5 py-4">
                 <h2 className="text-[17px] font-bold">{cotacoes.length ? "Nova versão da cotação" : "Nova cotação"}</h2>
-                <p className="text-[13px] text-[#5A6573]">Valores unitários · {fmtNum(item.quantidade)} {unidade}</p>
+                <p className="text-[13px] text-[#667085]">Valores unitários · {fmtNum(item.quantidade)} {unidade}</p>
               </header>
               <form onSubmit={(e) => { e.preventDefault(); lancar(); }}>
                 <div className="space-y-4 px-5 py-5">
@@ -341,13 +341,13 @@ export default function Ficha() {
                     {eu.pode("margem.ver") && (
                       <div>
                         <span className="mb-1.5 block text-[13px] font-semibold">Margem resultante</span>
-                        <div className="flex h-[38px] items-center bg-[#EEF1F4] px-3 text-[14px] font-semibold tabular-nums">{margemPrevia == null ? "—" : `${fmtNum(margemPrevia, 1)}%`}</div>
+                        <div className="flex h-[40px] items-center rounded-lg bg-[#F2F4F7] px-3 text-[14px] font-semibold tabular-nums">{margemPrevia == null ? "—" : `${fmtNum(margemPrevia, 1)}%`}</div>
                       </div>
                     )}
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-2 border-t border-[#E6E9ED] px-5 py-4">
-                  <button type="submit" disabled={acao.ocupado} className="h-[44px] flex-1 bg-[#0B1A2A] px-4 text-left text-[15px] font-semibold text-white hover:bg-[#1E3550] disabled:opacity-50">{cotacoes.length ? "Registrar nova versão" : "Registrar cotação"}</button>
+                <div className="flex flex-wrap gap-2 border-t border-[#F0F2F5] px-5 py-4">
+                  <button type="submit" disabled={acao.ocupado} className="h-[44px] flex-1 rounded-lg bg-[#0B1A2A] px-4 text-left text-[15px] font-semibold text-white hover:bg-[#1E3550] disabled:opacity-50">{cotacoes.length ? "Registrar nova versão" : "Registrar cotação"}</button>
                   {item.andamento === "em_cotacao" && atual && (
                     <Botao type="button" className="h-[44px]" disabled={acao.ocupado || atual.situacao !== "pronta"} title={atual.situacao !== "pronta" ? "Resolva os alertas antes" : ""} onClick={() => acao.rodar(async () => { await api(`/os/itens/${id}/enviar`, { metodo: "POST" }); tudo(); })}>Marcar enviada no Coupa</Botao>
                   )}
@@ -368,20 +368,20 @@ export default function Ficha() {
 
           <Cartao titulo="Versões desta cotação" sub={String(cotacoes.length)}>
             <Estado erro={cot.erro} carregando={cot.carregando && !cot.dados}>
-              {cotacoes.length === 0 && <p className="text-[14px] text-[#5A6573]">Nenhuma cotação lançada para este item.</p>}
+              {cotacoes.length === 0 && <p className="text-[14px] text-[#667085]">Nenhuma cotação lançada para este item.</p>}
               <ul className="space-y-3">
                 {cotacoes.map((c) => (
-                  <li key={c.id} className={`border p-3 text-[14px] ${c.situacao === "substituida" ? "border-[#E6E9ED] bg-[#F6F8FA] text-[#5A6573]" : "border-[#C9D0D8]"}`}>
+                  <li key={c.id} className={`rounded-lg border p-3 text-[14px] ${c.situacao === "substituida" ? "border-[#F0F2F5] bg-[#F8F9FB] text-[#667085]" : "border-[#C9D0D8]"}`}>
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="font-semibold">v{c.versao} · {c.fornecedor || "sem fornecedor"}{c.conta && ` · ${c.conta}`}</span>
                       <Etiqueta tom={({ pronta: "bom", enviada: "info", rascunho: "alerta" } as J)[c.situacao] || "neutro"}>{({ pronta: "Pronta para enviar", enviada: "Enviada", rascunho: "Alerta aberto", substituida: "Substituída" } as J)[c.situacao]}</Etiqueta>
                     </div>
                     <div className="mt-1.5"><Valores v={c.valores} /></div>
-                    <div className="mt-1 text-[12px] text-[#5A6573]">por {c.por || "?"} em {fmtDataHora(c.criada_em)}</div>
+                    <div className="mt-1 text-[12px] text-[#667085]">por {c.por || "?"} em {fmtDataHora(c.criada_em)}</div>
                     {c.alertas.map((a: J) => (
-                      <div key={a.id} className={`mt-2 p-2.5 ${a.situacao === "aberto" ? "bg-[#FDF4E3]" : "bg-[#F6F8FA]"}`}>
+                      <div key={a.id} className={`mt-2 rounded-md p-2.5 ${a.situacao === "aberto" ? "bg-[#FDF4E3]" : "bg-[#F8F9FB]"}`}>
                         <div className="font-semibold text-[#7A5210]">{ALERTAS[a.tipo]}{a.valor_referencia != null && ` (último unitário: ${fmtReais(a.valor_referencia)})`}</div>
-                        {a.situacao === "justificado" ? <div className="text-[12px] text-[#334255]">Mantido com justificativa: {a.justificativa}</div>
+                        {a.situacao === "justificado" ? <div className="text-[12px] text-[#344054]">Mantido com justificativa: {a.justificativa}</div>
                           : a.tipo === "sem_preco" ? <div className="text-[12px] text-[#7A5210]">Lance uma nova versão com o preço de compra.</div>
                           : podeCotar && c.situacao !== "substituida" && (
                             <form className="mt-2 flex flex-wrap gap-2" onSubmit={(e) => { e.preventDefault(); acao.rodar(async () => { await api(`/os/alertas/${a.id}/justificar`, { metodo: "POST", corpo: { justificativa: just[a.id] || "" } }); cot.recarregar(); }); }}>

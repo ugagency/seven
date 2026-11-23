@@ -19,7 +19,7 @@ function Caso({ p, feito }: { p: J; feito: () => void }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="font-medium text-[#0B1A2A]">{p.nome}</div>
-          <p className="mt-1 text-[14px] leading-relaxed text-[#334255]">{p.descricao || "Sem descrição na captura."}</p>
+          <p className="mt-1 text-[14px] leading-relaxed text-[#344054]">{p.descricao || "Sem descrição na captura."}</p>
           <div className="mt-2 flex flex-wrap gap-1">
             {(p.codigos || []).map((c: string) => <Etiqueta key={c}>cód. {c}</Etiqueta>)}
             <Etiqueta tom="alerta">{fmtNum(p.abertos)} item(ns) aberto(s)</Etiqueta>
@@ -31,7 +31,7 @@ function Caso({ p, feito }: { p: J; feito: () => void }) {
       </div>
       {acao.erro && <div className="mt-2"><Aviso tom="ruim">{acao.erro}</Aviso></div>}
       {pode ? (
-        <div className="mt-3 border-t border-[#E6E9ED] pt-3">
+        <div className="mt-3 border-t border-[#F0F2F5] pt-3">
           <div className="flex flex-wrap gap-2">
             <Botao variante={modo === "associar" ? "primario" : "secundario"} onClick={() => setModo(modo === "associar" ? "" : "associar")}>É um produto que já existe</Botao>
             <Botao variante={modo === "novo" ? "primario" : "secundario"} onClick={() => setModo(modo === "novo" ? "" : "novo")}>É um produto novo</Botao>
@@ -40,10 +40,10 @@ function Caso({ p, feito }: { p: J; feito: () => void }) {
           {modo === "associar" && (
             <div className="mt-3">
               <Campo rotulo="Buscar o produto certo (nome, referência ou código)"><input autoFocus className={campoCls} value={busca} onChange={(e) => setBusca(e.target.value)} /></Campo>
-              <ul className="mt-1 max-h-56 divide-y divide-[#E6E9ED] overflow-auto border border-[#DCE0E5] empty:hidden">
+              <ul className="mt-1 max-h-56 divide-y divide-[#F0F2F5] overflow-auto border border-[#EAECF0] empty:hidden">
                 {(achados.dados || []).filter((a) => a.id !== p.id).map((a) => (
                   <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-[14px]">
-                    <span>{a.nome} <span className="text-[12px] text-[#5A6573]">{[a.fabricante, a.referencia].filter(Boolean).join(" · ")} · cód. {(a.codigos || []).join(", ") || "sem código"} · {a.ocorrencias} aparições</span></span>
+                    <span>{a.nome} <span className="text-[12px] text-[#667085]">{[a.fabricante, a.referencia].filter(Boolean).join(" · ")} · cód. {(a.codigos || []).join(", ") || "sem código"} · {a.ocorrencias} aparições</span></span>
                     <Botao disabled={acao.ocupado} onClick={() => decidir({ acao: "associar", destino_id: a.id })}>Juntar a este</Botao>
                   </li>
                 ))}
@@ -59,7 +59,7 @@ function Caso({ p, feito }: { p: J; feito: () => void }) {
             </form>
           )}
         </div>
-      ) : <p className="mt-3 text-[12px] text-[#5A6573]">Seu perfil não resolve conferências.</p>}
+      ) : <p className="mt-3 text-[12px] text-[#667085]">Seu perfil não resolve conferências.</p>}
     </Cartao>
   );
 }
@@ -77,7 +77,7 @@ export default function Conferencia() {
         <Botao type="submit">Filtrar</Botao>
       </form>
       <Estado erro={erro} carregando={carregando && !dados} vazio={dados && !dados.produtos.length && "Nada para conferir agora."}>
-        <p className="mb-2 text-[14px] text-[#5A6573]">{fmtNum(dados?.total)} produto(s) aguardando decisão.</p>
+        <p className="mb-2 text-[14px] text-[#667085]">{fmtNum(dados?.total)} produto(s) aguardando decisão.</p>
         <div className="space-y-3">{dados?.produtos.map((p: J) => <Caso key={p.id} p={p} feito={recarregar} />)}</div>
         {dados && dados.total > 30 && (
           <div className="mt-3 flex justify-end gap-2">

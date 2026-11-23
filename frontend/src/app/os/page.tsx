@@ -19,10 +19,10 @@ function falta(prazo?: string | null) {
 
 function Kpi({ rotulo, valor, sub, cor, onClick }: { rotulo: string; valor: string; sub?: string; cor?: string; onClick?: () => void }) {
   return (
-    <button onClick={onClick} className="border-[#DCE0E5] px-5 py-5 text-left hover:bg-[#F6F8FA] [&:not(:first-child)]:border-t sm:[&:not(:first-child)]:border-l sm:[&:not(:first-child)]:border-t-0">
+    <button onClick={onClick} className="rounded-xl border border-[#EAECF0] bg-white px-5 py-5 text-left shadow-[0_1px_2px_rgba(16,24,40,0.04),0_1px_3px_rgba(16,24,40,0.05)] transition hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(16,24,40,0.08)]">
       <Rotulo>{rotulo}</Rotulo>
-      <div className="mt-1.5 text-[34px] font-extrabold leading-none tracking-tight tabular-nums" style={{ color: cor || "#0B1A2A" }}>{valor}</div>
-      {sub && <div className="mt-2 text-[13px] text-[#5A6573]">{sub}</div>}
+      <div className="mt-2 text-[30px] font-semibold leading-none tracking-[-0.02em] tabular-nums" style={{ color: cor || "#101828" }}>{valor}</div>
+      {sub && <div className="mt-2 text-[13px] text-[#667085]">{sub}</div>}
     </button>
   );
 }
@@ -68,7 +68,7 @@ function Fila() {
       </Titulo>
       {exp.erro && <div className="mb-3"><Aviso tom="ruim">{exp.erro}</Aviso></div>}
 
-      <div className={`mb-5 grid border border-[#DCE0E5] border-t-2 border-t-[#0B1A2A] bg-white ${comValor ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-3"}`}>
+      <div className={`mb-6 grid gap-4 ${comValor ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-3"}`}>
         <Kpi rotulo="Em aberto" valor={fmtNum(c?.em_aberto) || "–"} sub="itens a cotar ou em cotação" onClick={() => muda({ situacao: "abertos", prazo_ate: "", andamento: "" })} />
         <Kpi rotulo="Em cotação por você" valor={fmtNum(c?.aguardando_voce) || "–"} cor="#00756D" sub="itens que você assumiu" onClick={() => { setMais(true); muda({ situacao: "abertos", andamento: "em_cotacao" }); }} />
         <Kpi rotulo="Encerra em 48h" valor={fmtNum(c?.encerra_48h) || "–"} cor="#B42318" sub="itens com prazo curto" onClick={() => muda({ situacao: "abertos", prazo_ate: daqui(2), ordem: "prazo" })} />
@@ -77,7 +77,7 @@ function Fila() {
 
       <form onSubmit={(e) => { e.preventDefault(); muda({ busca }); }} className="mb-2 flex flex-wrap gap-2">
         <div className="relative min-w-[260px] flex-[2]">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#5A6573]" aria-hidden />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#98A2B3]" aria-hidden />
           <input aria-label="Buscar" className={`${campoCls} pl-9`} placeholder="Buscar descrição, código Vale, marca, referência ou evento" value={busca} onChange={(e) => setBusca(e.target.value)} />
         </div>
         <input aria-label="UF" className={campoCls} style={{ width: 110 }} placeholder="UF: todas" maxLength={2} value={f.uf} onChange={(e) => muda({ uf: e.target.value.toUpperCase() })} />
@@ -95,7 +95,7 @@ function Fila() {
         <button type="submit" className="sr-only">Buscar</button>
       </form>
       {mais && (
-        <div className="mb-2 flex flex-wrap items-center gap-2 border border-[#DCE0E5] bg-white p-3">
+        <div className="mb-2 flex flex-wrap items-center gap-3 rounded-xl border border-[#EAECF0] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_1px_3px_rgba(16,24,40,0.05)] p-3">
           <select aria-label="Situação" className={campoCls} style={{ width: 150 }} value={f.situacao} onChange={(e) => muda({ situacao: e.target.value })}>
             <option value="abertos">Em aberto</option><option value="expirados">Expirados</option><option value="todos">Todos</option>
           </select>
@@ -115,18 +115,17 @@ function Fila() {
         </div>
       )}
 
-      <div className="mt-3 border border-[#DCE0E5] bg-white">
-        <div role="tablist" aria-label="Abas da fila" className="flex flex-wrap border-b-2 border-[#0B1A2A] px-2">
+      <div className="mt-2 overflow-hidden rounded-xl border border-[#EAECF0] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_1px_3px_rgba(16,24,40,0.05)]">
+        <div role="tablist" aria-label="Abas da fila" className="flex flex-wrap gap-1 border-b border-[#F0F2F5] px-3 py-2.5">
           {[["", "Todos"], ...Object.entries(ABAS)].map(([k, rot]) => {
             const n = dados ? (k ? dados.abas[k] : Object.values(dados.abas as J).reduce((a: number, b: any) => a + b, 0)) : null;
             const sel = f.aba === k;
             return (
               <button key={k} role="tab" aria-selected={sel} onClick={() => muda({ aba: k })}
-                className={`relative flex items-center gap-2 px-4 py-3.5 text-[14px] ${sel ? "font-bold" : "text-[#334255] hover:text-[#0B1A2A]"}`}>
-                <span className="h-[9px] w-[9px]" style={{ background: k ? COR_ABA[k].c : "#0B1A2A" }} aria-hidden />
-                {rot} {n !== null && <span className="text-[13px] font-normal tabular-nums text-[#5A6573]">{fmtNum(n as number)}</span>}
-                {sel && <span className="absolute inset-x-0 -bottom-[2px] h-[3px] bg-[#0B1A2A]" aria-hidden />}
-              </button>
+                className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-[14px] font-medium ${sel ? "bg-[#F2F4F7] text-[#101828]" : "text-[#667085] hover:bg-[#F8F9FB] hover:text-[#101828]"}`}>
+                <span className="h-2 w-2 rounded-full" style={{ background: k ? COR_ABA[k].c : "#101828" }} aria-hidden />
+                {rot} {n !== null && <span className="rounded-full bg-white px-1.5 text-[12px] tabular-nums text-[#667085] ring-1 ring-[#EAECF0]">{fmtNum(n as number)}</span>}
+                              </button>
             );
           })}
         </div>
@@ -134,7 +133,7 @@ function Fila() {
           <Estado erro={erro} carregando={carregando && !dados} vazio={dados && !dados.itens.length && "Nenhum item com esses filtros."}>
             <table className="w-full min-w-[920px] border-collapse">
               <thead className={theadCls}>
-                <tr><th className={th}>Item</th><th className={th}>O que já sabemos</th><th className={th}>Encerra</th><th className={th}>Estado</th>{comValor && <th className={`${th} text-right`}>Valor est.</th>}</tr>
+                <tr><th className={th}>Item</th><th className={th}>O que já sabemos</th><th className={th}>Encerra</th><th className={th}>Estado</th>{comValor && <th className={`${th} whitespace-nowrap text-right`}>Valor est.</th>}</tr>
               </thead>
               <tbody className={carregando ? "opacity-60" : ""}>
                 {dados?.itens.map((i: J) => {
@@ -143,33 +142,32 @@ function Fila() {
                   const p = i.produto;
                   const sub = [[p.fabricante, p.referencia].filter(Boolean).join(" / "), p.codigos[0] && `${p.codigos[0]}${p.codigos.length > 1 ? ` +${p.codigos.length - 1} códigos` : ""}`, i.uf, `${fmtNum(i.quantidade)} ${(i.unidade || "").split("-")[0].toLowerCase()}`].filter(Boolean).join(" · ");
                   return (
-                    <tr key={i.id} onClick={() => router.push(`/os/item/${i.id}`)} className="cursor-pointer border-b border-[#E6E9ED] last:border-0 hover:bg-[#F6F8FA]">
-                      <td className="relative py-4 pl-5 pr-4 align-top">
-                        <span className="absolute inset-y-0 left-0 w-[3px]" style={{ background: COR_ABA[i.aba]?.c }} aria-hidden />
-                        <Link prefetch={false} href={`/os/item/${i.id}`} onClick={(e) => e.stopPropagation()} className="text-[15px] font-semibold text-[#0B1A2A] hover:underline">{p.nome}</Link>
-                        <div className="mono mt-1 text-[12.5px] text-[#5A6573]">{sub}</div>
-                        <div className="mt-1 text-[12px] text-[#8A94A0]">Evento {i.numero_evento} · {i.contas.map((x: number) => eu.nomeConta(x)).join(" e ")}{i.linhas > 1 && ` · ${i.linhas} linhas no evento`}</div>
+                    <tr key={i.id} onClick={() => router.push(`/os/item/${i.id}`)} className="cursor-pointer border-b border-[#F0F2F5] last:border-0 hover:bg-[#F8F9FB]">
+                      <td className="py-4 pl-6 pr-4 align-top">
+                                                <Link prefetch={false} href={`/os/item/${i.id}`} onClick={(e) => e.stopPropagation()} className="text-[14px] font-semibold text-[#101828] hover:text-[#00756D]">{p.nome}</Link>
+                        <div className="mt-1 text-[13px] text-[#667085]">{sub}</div>
+                        <div className="mt-0.5 text-[12px] text-[#98A2B3]">Evento {i.numero_evento} · {i.contas.map((x: number) => eu.nomeConta(x)).join(" e ")}{i.linhas > 1 && ` · ${i.linhas} linhas no evento`}</div>
                       </td>
                       <td className="px-4 py-4 align-top text-[14px]">
                         {i.fornecedores ? <div className="font-semibold">{i.fornecedores} fornecedor{i.fornecedores > 1 ? "es" : ""} vinculado{i.fornecedores > 1 ? "s" : ""}</div>
                           : p.nivel === "conferir" ? <div className="font-semibold text-[#4E3878]">conferir identificação</div>
-                          : <div className="text-[#334255]">buscando</div>}
-                        <div className="mt-0.5 text-[13px] text-[#5A6573]">
+                          : <div className="text-[#344054]">buscando</div>}
+                        <div className="mt-0.5 text-[13px] text-[#667085]">
                           {i.ocorrencias > 1 ? `${i.ocorrencias} aparições` : "sem histórico"}{!i.fornecedores && i.ocorrencias > 1 && " · sem fornecedor vinculado"}
                         </div>
                         {i.declinios > 0 && <div className="mt-1"><Etiqueta tom="alerta">declinado {i.declinios}x</Etiqueta></div>}
                       </td>
                       <td className="whitespace-nowrap px-4 py-4 align-top">
                         <div className={`text-[14px] font-semibold tabular-nums ${urgente || i.expirado ? "text-[#B42318]" : ""}`}>{dataCurta(i.prazo)}</div>
-                        <div className={`text-[13px] ${urgente ? "text-[#B42318]" : "text-[#5A6573]"}`}>{falta(i.prazo)}</div>
+                        <div className={`text-[13px] ${urgente ? "text-[#B42318]" : "text-[#667085]"}`}>{falta(i.prazo)}</div>
                       </td>
                       <td className="px-4 py-4 align-top">
                         <div className="flex flex-col items-start gap-1">
                           {i.expirado ? <Etiqueta tom="ruim">Expirada</Etiqueta> : i.andamento !== "a_cotar" ? <Etiqueta tom={tomAndamento(i.andamento)}>{ANDAMENTOS[i.andamento]}</Etiqueta> : <EtiquetaAba aba={i.aba} />}
-                          {i.responsavel && i.andamento === "em_cotacao" && <span className="text-[12px] text-[#5A6573]">por {i.responsavel}</span>}
+                          {i.responsavel && i.andamento === "em_cotacao" && <span className="text-[12px] text-[#667085]">por {i.responsavel}</span>}
                         </div>
                       </td>
-                      {comValor && <td className="whitespace-nowrap px-5 py-4 text-right align-top text-[14px] font-semibold tabular-nums">{i.valor_estimado != null ? fmtReais(i.valor_estimado) : <span className="font-normal text-[#8A94A0]">–</span>}</td>}
+                      {comValor && <td className="whitespace-nowrap px-5 py-4 text-right align-top text-[14px] font-semibold tabular-nums">{i.valor_estimado != null ? fmtReais(i.valor_estimado) : <span className="font-normal text-[#98A2B3]">–</span>}</td>}
                     </tr>
                   );
                 })}
@@ -180,7 +178,7 @@ function Fila() {
       </div>
 
       {dados && dados.total > 0 && (
-        <div className="mt-4 flex items-center justify-between text-[14px] text-[#5A6573]">
+        <div className="mt-4 flex items-center justify-between text-[14px] text-[#667085]">
           <span>{fmtNum(dados.total)} itens · página {f.pagina} de {paginas}</span>
           <div className="flex gap-2">
             <Botao disabled={f.pagina <= 1} onClick={() => setF((a) => ({ ...a, pagina: a.pagina - 1 }))}>Anterior</Botao>

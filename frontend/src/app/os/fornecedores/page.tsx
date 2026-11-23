@@ -34,7 +34,7 @@ export default function Fornecedores() {
           <option value="">Todas as marcas</option>
           {(dados?.marcas || []).map((m: string) => <option key={m}>{m}</option>)}
         </select>
-        <label className="flex items-center gap-2 text-[14px] text-[#334255]"><input type="checkbox" checked={f.inativos} onChange={(e) => setF({ ...f, inativos: e.target.checked })} /> Mostrar inativos</label>
+        <label className="flex items-center gap-2 text-[14px] text-[#344054]"><input type="checkbox" checked={f.inativos} onChange={(e) => setF({ ...f, inativos: e.target.checked })} /> Mostrar inativos</label>
         <Botao type="submit">Buscar</Botao>
       </form>
       {acao.erro && !form && <div className="mb-3"><Aviso tom="ruim">{acao.erro}</Aviso></div>}
@@ -55,10 +55,10 @@ export default function Fornecedores() {
             <div className="flex gap-2 md:col-span-4"><Botao type="submit" variante="primario" disabled={acao.ocupado}>Salvar</Botao><Botao type="button" onClick={() => setForm(null)}>Cancelar</Botao></div>
           </form>
           {form.id && detalhe.dados && (
-            <div className="mt-4 border-t border-[#E6E9ED] pt-3 text-[14px]">
-              {detalhe.dados.outros_nomes.length > 0 && <p className="text-[#5A6573]">Outras escritas do nome: {detalhe.dados.outros_nomes.join(", ")}</p>}
+            <div className="mt-4 border-t border-[#F0F2F5] pt-3 text-[14px]">
+              {detalhe.dados.outros_nomes.length > 0 && <p className="text-[#667085]">Outras escritas do nome: {detalhe.dados.outros_nomes.join(", ")}</p>}
               <p className="mt-1 font-semibold">Produtos vinculados ({detalhe.dados.produtos.length})</p>
-              <ul className="mt-1 max-h-48 overflow-auto text-[#334255]">{detalhe.dados.produtos.map((p: J) => <li key={p.id}>{p.nome} <span className="text-[12px] text-[#5A6573]">{[p.fabricante, p.referencia].filter(Boolean).join(" · ")}</span></li>)}</ul>
+              <ul className="mt-1 max-h-48 overflow-auto text-[#344054]">{detalhe.dados.produtos.map((p: J) => <li key={p.id}>{p.nome} <span className="text-[12px] text-[#667085]">{[p.fabricante, p.referencia].filter(Boolean).join(" · ")}</span></li>)}</ul>
             </div>
           )}
         </Cartao>
@@ -66,18 +66,18 @@ export default function Fornecedores() {
 
       {juntar !== null && <div className="mb-3"><Aviso tom="alerta">Escolha na lista o cadastro que deve <strong>ficar</strong>. O outro some e o nome dele vira uma variação. <button className="font-medium underline" onClick={() => setJuntar(null)}>Cancelar</button></Aviso></div>}
 
-      <div className="overflow-x-auto border border-[#DCE0E5] bg-white">
+      <div className="overflow-x-auto rounded-xl border border-[#EAECF0] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_1px_3px_rgba(16,24,40,0.05)]">
         <Estado erro={erro} carregando={carregando && !dados} vazio={dados && !dados.fornecedores.length && "Nenhum fornecedor cadastrado com esse filtro. A base da Seven ainda não foi importada; cadastre aqui ou pela ficha do item."}>
           <table className="w-full min-w-[760px]">
-            <thead className="border-b border-[#DCE0E5] bg-[#F6F8FA]"><tr><th className={th}>Fornecedor</th><th className={th}>Contato</th><th className={th}>Marcas</th><th className={th}>Produtos</th><th className={th}>Taxa de vitória</th><th className={th}></th></tr></thead>
+            <thead className="border-b border-[#EAECF0] bg-[#F8F9FB]"><tr><th className={th}>Fornecedor</th><th className={th}>Contato</th><th className={th}>Marcas</th><th className={th}>Produtos</th><th className={th}>Taxa de vitória</th><th className={th}></th></tr></thead>
             <tbody>
               {dados?.fornecedores.map((x: J) => (
-                <tr key={x.id} className="border-b border-[#E6E9ED] last:border-0">
-                  <td className={td}><span className="font-medium">{x.nome}</span>{!x.ativo && <> <Etiqueta>inativo</Etiqueta></>}<div className="text-[12px] text-[#5A6573]">{[x.cidade, x.uf].filter(Boolean).join("/")}</div></td>
-                  <td className={td}><div>{x.contato}</div><div className="text-[12px] text-[#5A6573]">{[x.telefone, x.email].filter(Boolean).join(" · ")}</div></td>
+                <tr key={x.id} className="border-b border-[#F0F2F5] last:border-0">
+                  <td className={td}><span className="font-medium">{x.nome}</span>{!x.ativo && <> <Etiqueta>inativo</Etiqueta></>}<div className="text-[12px] text-[#667085]">{[x.cidade, x.uf].filter(Boolean).join("/")}</div></td>
+                  <td className={td}><div>{x.contato}</div><div className="text-[12px] text-[#667085]">{[x.telefone, x.email].filter(Boolean).join(" · ")}</div></td>
                   <td className={td}><div className="flex flex-wrap gap-1">{x.marcas.map((m: string) => <Etiqueta key={m} tom="contorno" mono>{m}</Etiqueta>)}</div></td>
                   <td className={`${td} tabular-nums`}>{fmtNum(x.produtos)}</td>
-                  <td className={`${td} tabular-nums`}>{x.com_resultado ? `${Math.round((100 * x.ganhas) / x.com_resultado)}% (${x.ganhas} de ${x.com_resultado})` : <span className="text-[#8A94A0]">sem resultado</span>}</td>
+                  <td className={`${td} tabular-nums`}>{x.com_resultado ? `${Math.round((100 * x.ganhas) / x.com_resultado)}% (${x.ganhas} de ${x.com_resultado})` : <span className="text-[#98A2B3]">sem resultado</span>}</td>
                   <td className={`${td} whitespace-nowrap text-right`}>
                     {pode && (juntar === null ? (
                       <>

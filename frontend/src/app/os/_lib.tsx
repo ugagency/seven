@@ -134,20 +134,20 @@ export const COR_ABA: Record<string, { c: string; bg: string; fg: string }> = {
   conferencia: { c: "#7C5CB0", bg: "#ECE6F5", fg: "#4E3878" },
 };
 const TONS: Record<string, string> = {
-  neutro: "bg-[#EEF1F4] text-[#334255]",
+  neutro: "bg-[#F2F4F7] text-[#344054]",
   bom: "bg-[#DDF3F1] text-[#00665F]",
   alerta: "bg-[#FBEFD9] text-[#7A5210]",
   ruim: "bg-[#FDECEA] text-[#B42318]",
   info: "bg-[#E1E8F1] text-[#2C4566]",
   roxo: "bg-[#ECE6F5] text-[#4E3878]",
-  contorno: "bg-white text-[#0B1A2A] ring-1 ring-inset ring-[#C9D0D8]",
+  contorno: "bg-[#F2F4F7] text-[#344054]",
 };
 export const Etiqueta = ({ tom = "neutro", mono, children }: { tom?: keyof typeof TONS | string; mono?: boolean; children: ReactNode }) => (
-  <span className={`inline-flex items-center whitespace-nowrap px-2 py-[3px] text-[12px] font-semibold leading-tight ${mono ? "mono font-medium" : ""} ${TONS[tom] || TONS.neutro}`}>{children}</span>
+  <span className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-[12px] font-medium leading-5 ${mono ? "mono" : ""} ${TONS[tom] || TONS.neutro}`}>{children}</span>
 );
 export const EtiquetaAba = ({ aba }: { aba: string }) => {
   const c = COR_ABA[aba];
-  return <span className="inline-flex items-center whitespace-nowrap px-2 py-[3px] text-[12px] font-semibold" style={c ? { background: c.bg, color: c.fg } : undefined}>{ABAS[aba] || aba}</span>;
+  return <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-[12px] font-medium leading-5" style={c ? { background: c.bg, color: c.fg } : undefined}><span className="h-1.5 w-1.5 rounded-full" style={{ background: c?.c }} aria-hidden />{ABAS[aba] || aba}</span>;
 };
 export const tomAndamento = (a: string) => ({ ganha: "bom", enviada: "info", em_cotacao: "info", declinada: "neutro", perdida: "ruim" } as J)[a] || "neutro";
 export const tomNivel = (n: string) => ({ certeza: "bom", provavel: "alerta", conferir: "roxo", nao_identificavel: "ruim" } as J)[n] || "neutro";
@@ -155,77 +155,77 @@ export const tomNivel = (n: string) => ({ certeza: "bom", provavel: "alerta", co
 export function Botao({ variante = "secundario", className = "", ...p }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variante?: "primario" | "secundario" | "perigo" | "texto" }) {
   const estilos = {
     primario: "bg-[#0B1A2A] text-white border-[#0B1A2A] hover:bg-[#1E3550]",
-    secundario: "bg-white text-[#0B1A2A] border-[#0B1A2A] hover:bg-[#F6F8FA]",
-    perigo: "bg-white text-[#B42318] border-[#E8B4AE] hover:bg-[#FDECEA]",
+    secundario: "bg-white text-[#344054] border-[#D0D5DD] shadow-[0_1px_2px_rgba(16,24,40,0.05)] hover:bg-[#F8F9FB]",
+    perigo: "bg-white text-[#B42318] border-[#FECDCA] hover:bg-[#FEF3F2]",
     texto: "border-transparent px-1.5 text-[#00756D] hover:underline",
   }[variante];
-  return <button {...p} className={`inline-flex min-h-[36px] items-center justify-center gap-2 border px-3.5 text-[14px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${estilos} ${className}`} />;
+  return <button {...p} className={`inline-flex min-h-[38px] items-center justify-center gap-2 rounded-lg border px-3.5 text-[14px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${estilos} ${className}`} />;
 }
 
-export const campoCls = "w-full h-[38px] border border-[#C9D0D8] bg-white px-3 text-[14px] text-[#0B1A2A] placeholder:text-[#8A94A0] focus:border-[#0B1A2A] focus:outline-none disabled:bg-[#EEF1F4] [&:is(textarea)]:h-auto [&:is(textarea)]:py-2";
+export const campoCls = "w-full h-[40px] rounded-lg border border-[#D0D5DD] bg-white px-3 text-[14px] text-[#101828] shadow-[0_1px_2px_rgba(16,24,40,0.05)] placeholder:text-[#98A2B3] focus:border-[#00A99D] focus:outline-none focus:ring-4 focus:ring-[#00A99D]/10 disabled:bg-[#F2F4F7] [&:is(textarea)]:h-auto [&:is(textarea)]:py-2";
 export const Rotulo = ({ children, className = "" }: { children: ReactNode; className?: string }) => (
-  <span className={`text-[11px] font-semibold uppercase tracking-[0.1em] text-[#5A6573] ${className}`}>{children}</span>
+  <span className={`text-[13px] font-medium text-[#667085] ${className}`}>{children}</span>
 );
 export function Campo({ rotulo, dica, children }: { rotulo: string; dica?: string; children: ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-[13px] font-semibold text-[#0B1A2A]">{rotulo}</span>
+      <span className="mb-1.5 block text-[13px] font-medium text-[#344054]">{rotulo}</span>
       {children}
-      {dica && <span className="mt-1 block text-[12px] text-[#5A6573]">{dica}</span>}
+      {dica && <span className="mt-1 block text-[12px] text-[#667085]">{dica}</span>}
     </label>
   );
 }
 
 export const Cartao = ({ titulo, sub, acoes, children, className = "", destaque, semPadding }: { titulo?: ReactNode; sub?: ReactNode; acoes?: ReactNode; children: ReactNode; className?: string; destaque?: boolean; semPadding?: boolean }) => (
-  <section className={`border border-[#DCE0E5] bg-white ${destaque ? "border-t-2 border-t-[#0B1A2A]" : ""} ${className}`}>
+  <section className={`rounded-xl border border-[#EAECF0] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_1px_3px_rgba(16,24,40,0.05)] ${destaque ? "border-t-2 border-t-[#0B1A2A]" : ""} ${className}`}>
     {(titulo || acoes) && (
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E6E9ED] px-5 py-4">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[#F0F2F5] px-6 py-4">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-          <h2 className="text-[17px] font-bold tracking-tight text-[#0B1A2A]">{titulo}</h2>
-          {sub && <span className="text-[13px] text-[#5A6573]">{sub}</span>}
+          <h2 className="text-[16px] font-semibold text-[#101828]">{titulo}</h2>
+          {sub && <span className="text-[13px] text-[#667085]">{sub}</span>}
         </div>
         <div className="flex flex-wrap items-center gap-2">{acoes}</div>
       </header>
     )}
-    <div className={semPadding ? "" : "p-5"}>{children}</div>
+    <div className={semPadding ? "" : "p-6"}>{children}</div>
   </section>
 );
 
 export const Secao = ({ titulo, sub, children }: { titulo: string; sub?: string; children?: ReactNode }) => (
-  <div className="mb-4 mt-8 flex items-baseline gap-3 border-b-2 border-[#0B1A2A] pb-2 first:mt-0">
-    <h2 className="text-[20px] font-extrabold tracking-tight">{titulo}</h2>
-    {sub && <span className="text-[14px] text-[#5A6573]">{sub}</span>}
+  <div className="mb-4 mt-10 flex items-baseline gap-3 first:mt-0">
+    <h2 className="text-[18px] font-semibold text-[#101828]">{titulo}</h2>
+    {sub && <span className="text-[14px] text-[#667085]">{sub}</span>}
     {children}
   </div>
 );
 
-const AVISO: Record<string, string> = { info: "bg-[#EEF1F4] text-[#334255]", alerta: "bg-[#FDF4E3] text-[#7A5210]", ruim: "bg-[#FDECEA] text-[#B42318]", bom: "bg-[#DDF3F1] text-[#00665F]" };
+const AVISO: Record<string, string> = { info: "bg-[#F2F4F7] text-[#344054]", alerta: "bg-[#FFFAEB] text-[#93370D]", ruim: "bg-[#FEF3F2] text-[#B42318]", bom: "bg-[#ECFDF9] text-[#00665F]" };
 export const Aviso = ({ tom = "info", children }: { tom?: "info" | "alerta" | "ruim" | "bom"; children: ReactNode }) => (
-  <div role={tom === "ruim" ? "alert" : "status"} className={`px-4 py-2.5 text-[14px] ${AVISO[tom]}`}>{children}</div>
+  <div role={tom === "ruim" ? "alert" : "status"} className={`rounded-lg px-4 py-3 text-[14px] ${AVISO[tom]}`}>{children}</div>
 );
 
 export function Estado({ carregando, erro, vazio, children }: { carregando?: boolean; erro?: string | null; vazio?: string | false | null; children?: ReactNode }) {
   if (erro) return <Aviso tom="ruim">{erro}</Aviso>;
-  if (carregando) return <p className="py-8 text-center text-[14px] text-[#5A6573]">Carregando…</p>;
-  if (vazio) return <p className="py-8 text-center text-[14px] text-[#5A6573]">{vazio}</p>;
+  if (carregando) return <p className="py-8 text-center text-[14px] text-[#667085]">Carregando…</p>;
+  if (vazio) return <p className="py-8 text-center text-[14px] text-[#667085]">{vazio}</p>;
   return <>{children}</>;
 }
 
 export const Titulo = ({ children, sub, acoes }: { children: ReactNode; sub?: ReactNode; acoes?: ReactNode }) => (
   <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
     <div>
-      <h1 className="text-[28px] font-extrabold leading-tight tracking-[-0.01em] text-[#0B1A2A]">{children}</h1>
-      {sub && <p className="mt-1 text-[15px] text-[#5A6573]">{sub}</p>}
+      <h1 className="text-[26px] font-semibold leading-tight tracking-[-0.02em] text-[#101828]">{children}</h1>
+      {sub && <p className="mt-1 text-[15px] text-[#667085]">{sub}</p>}
     </div>
     <div className="flex flex-wrap items-center gap-2">{acoes}</div>
   </div>
 );
 
 export const tabelaCls = "w-full border-collapse";
-export const theadCls = "border-b border-[#DCE0E5] bg-[#F6F8FA]";
-export const th = "px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-[#5A6573]";
-export const td = "px-5 py-3.5 align-top text-[14px] text-[#0B1A2A]";
-export const trCls = "border-b border-[#E6E9ED] last:border-0";
+export const theadCls = "border-b border-[#EAECF0] bg-[#F8F9FB]";
+export const th = "px-6 py-3 text-left text-[12px] font-medium text-[#667085]";
+export const td = "px-6 py-4 align-top text-[14px] text-[#101828]";
+export const trCls = "border-b border-[#F0F2F5] last:border-0";
 
 /** Executa uma acao que grava, guardando o erro para mostrar na tela. */
 export function useAcao() {
