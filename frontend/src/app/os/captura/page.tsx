@@ -1,7 +1,7 @@
 "use client";
  
-import Link from "next/link";
-import { useState } from "react";
+import { useCallback, useState } from "react";
+import RodarRobo from "./RodarRobo";
 import { Aviso, Botao, Cartao, Etiqueta, Estado, Titulo, api, baixar, fmtData, fmtDataHora, fmtNum, td, th, useAcao, useApi, useEu, type J } from "../_lib";
 
 export default function Captura() {
@@ -19,6 +19,7 @@ export default function Captura() {
       setMsg(r.ocupado ? "Já há uma atualização em andamento." : r.linhas_novas ? `${fmtNum(r.linhas_novas)} linha(s) nova(s) trazida(s), ${fmtNum(r.produtos_novos)} produto(s) novo(s).` : "Nada novo desde a última atualização.");
       dias.recarregar(); exec.recarregar();
     });
+  const recarregar = useCallback(() => { dias.recarregar(); exec.recarregar(); }, [dias.recarregar, exec.recarregar]); // eslint-disable-line react-hooks/exhaustive-deps
   const planilha = (data: string, conta?: number) => acao.rodar(() => baixar("/os/captura/planilha", { params: { data, conta } }, `eventos_${data}.xlsx`));
 
   return (
@@ -27,8 +28,8 @@ export default function Captura() {
         acoes={eu.pode("captura.rodar") && <Botao variante="primario" disabled={acao.ocupado} onClick={sincronizar}>{acao.ocupado ? "Atualizando…" : "Trazer capturas novas"}</Botao>}>
         Captura
       </Titulo>
+      {eu.pode("captura.rodar") && <RodarRobo aoTerminar={recarregar} />}
       <div className="mb-4 space-y-2">
-        <Aviso>Nesta fase o robô continua sendo rodado pela <Link href="/" className="font-medium underline">tela atual de captura</Link>. O OS lê o que o robô gravou; o botão Trazer capturas novas atualiza a fila.</Aviso>
         {msg && <Aviso tom="bom">{msg}</Aviso>}
         {acao.erro && <Aviso tom="ruim">{acao.erro}</Aviso>}
       </div>
