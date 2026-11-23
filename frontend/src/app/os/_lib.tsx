@@ -71,16 +71,27 @@ export async function baixar(caminho: string, opcoes: { metodo?: string; params?
   URL.revokeObjectURL(a.href);
 }
 
+// Ultima resposta de cada consulta, em memoria enquanto a aba estiver aberta. Ao voltar para uma tela,
+// os dados aparecem na hora e sao atualizados em seguida (sem tela vazia de "Carregando").
+const MEMORIA = new Map<string, unknown>();
+
 export function useApi<T = any>(caminho: string | null, params?: J) {
   const chave = caminho ? caminho + JSON.stringify(params || {}) : null;
-  const [estado, setEstado] = useState<{ dados: T | null; erro: string | null; carregando: boolean }>({ dados: null, erro: null, carregando: !!caminho });
+  const [estado, setEstado] = useState<{ dados: T | null; erro: string | null; carregando: boolean }>(() => {
+    const m = chave ? (MEMORIA.get(chave) as T | undefined) : undefined;
+    return { dados: m ?? null, erro: null, carregando: !!caminho && m === undefined };
+  });
   const [volta, setVolta] = useState(0);
   useEffect(() => {
-    if (!caminho) return;
+    if (!caminho || !chave) return;
     let vivo = true;
-    setEstado((e) => ({ ...e, carregando: true }));
+    const m = MEMORIA.get(chave) as T | undefined;
+    setEstado((e) => (m !== undefined ? { dados: m, erro: null, carregando: false } : { ...e, carregando: true }));
     api<T>(caminho, { params })
-      .then((dados) => vivo && setEstado({ dados, erro: null, carregando: false }))
+      .then((dados) => {
+        MEMORIA.set(chave, dados);
+        if (vivo) setEstado({ dados, erro: null, carregando: false });
+      })
       .catch((e) => vivo && setEstado({ dados: null, erro: e.message, carregando: false }));
     return () => {
       vivo = false;
@@ -90,6 +101,8 @@ export function useApi<T = any>(caminho: string | null, params?: J) {
   const recarregar = useCallback(() => setVolta((v) => v + 1), []);
   return { ...estado, recarregar };
 }
+
+export const limparMemoria = () => MEMORIA.clear();
 
 // ---------- usuario ----------
 export type Eu = { id: string; email: string; nome: string; perfil: string; permissoes: string[]; contas: { id: number; nome: string; cnpj?: string; filial?: string }[] };

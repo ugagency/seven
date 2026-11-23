@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { BarChart3, ClipboardCheck, Download, List, LogOut, MessageSquare, RefreshCw, Settings, ShieldCheck, Users } from "lucide-react";
 import "./os.css";
-import { api, ErroApi, EuProvider, fmtDataHora, fmtNum, PERFIS, Rotulo, supabase, useApi, type Eu, type J } from "./_lib";
+import { api, ErroApi, EuProvider, fmtDataHora, fmtNum, limparMemoria, PERFIS, Rotulo, supabase, useApi, type Eu, type J } from "./_lib";
 
 const MENU: { href: string; rotulo: string; icone: typeof List; permissao?: string }[] = [
   { href: "/os", rotulo: "Fila de cotações", icone: List },
@@ -84,6 +84,7 @@ export default function OsLayout({ children }: { children: ReactNode }) {
   }, [router]);
 
   const sair = async () => {
+    limparMemoria();
     await supabase().auth.signOut();
     router.replace("/login");
   };

@@ -1,78 +1,146 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
-// Pagina de chegada do convite do Seven OS. O link do Supabase traz o login no endereco (#access_token=...);
-// aqui a pessoa define a propria senha e segue para o Seven OS. Nao mexe na tela atual do robo.
-import { useEffect, useState } from "react";
+// Pagina de chegada do convite do Seven OS. O link traz um codigo (?convite=...); aqui ele vira login
+// (verifyOtp), a pessoa define a propria senha e segue para o Seven OS. Nao mexe na tela atual do robo.
+// Tambem aceita o formato antigo do Supabase (#access_token=...), para e-mails enviados pelo proprio Supabase.
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Check, Eye, EyeOff } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import "../os/os.css";
 
 type Fase = "lendo" | "pronto" | "invalido" | "salvando";
 
-export default function DefinirSenha() {
+function Formulario() {
   const router = useRouter();
+  const iniciou = useRef(false);
   const [fase, setFase] = useState<Fase>("lendo");
   const [email, setEmail] = useState("");
+  const [nome, setNome] = useState("");
   const [senha, setSenha] = useState("");
   const [conf, setConf] = useState("");
+  const [ver, setVer] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [esqueci, setEsqueci] = useState(false);
 
   useEffect(() => {
+    if (iniciou.current) return; // o codigo so pode ser usado uma vez
+    iniciou.current = true;
+    const q = new URLSearchParams(window.location.search);
+    const codigo = q.get("convite");
+    const tipo = q.get("tipo") === "senha" ? "recovery" : "invite";
     const h = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-    window.history.replaceState(null, "", window.location.pathname); // tira o token da barra de endereco
+    window.history.replaceState(null, "", window.location.pathname); // tira o codigo da barra de endereco
     const sb = createClient();
     (async () => {
-      if (h.get("error")) {
-        setErro(h.get("error_code") === "otp_expired" ? "Este convite expirou ou já foi usado. Peça um novo ao administrador." : h.get("error_description") || "Convite inválido.");
-        setFase("invalido");
-        return;
-      }
-      const at = h.get("access_token"), rt = h.get("refresh_token");
-      if (at && rt) {
-        const { error } = await sb.auth.setSession({ access_token: at, refresh_token: rt });
-        if (error) { setErro("Não foi possível abrir o convite. Peça um novo ao administrador."); setFase("invalido"); return; }
+      const falhou = (m: string) => { setErro(m); setFase("invalido"); };
+      if (h.get("error")) return falhou(h.get("error_code") === "otp_expired" ? "Este link expirou ou já foi usado." : "Este link não é válido.");
+      if (codigo) {
+        const { error } = await sb.auth.verifyOtp({ token_hash: codigo, type: tipo });
+        if (error) return falhou("Este link expirou ou já foi usado.");
+      } else if (h.get("access_token") && h.get("refresh_token")) {
+        const { error } = await sb.auth.setSession({ access_token: h.get("access_token")!, refresh_token: h.get("refresh_token")! });
+        if (error) return falhou("Este link expirou ou já foi usado.");
       }
       const { data } = await sb.auth.getUser();
-      if (!data.user) { setErro("Abra esta página pelo link do convite que você recebeu."); setFase("invalido"); return; }
+      if (!data.user) return falhou("Abra esta página pelo link que você recebeu.");
+      setEsqueci(tipo === "recovery");
       setEmail(data.user.email || "");
+      setNome(((data.user.user_metadata?.nome as string) || "").split(" ")[0]);
       setFase("pronto");
     })();
   }, []);
 
+  const tamanhoOk = senha.length >= 8;
+  const iguais = senha.length > 0 && senha === conf;
+
   const salvar = async (e: React.FormEvent) => {
     e.preventDefault();
     setErro(null);
-    if (senha.length < 8) return setErro("A senha precisa ter pelo menos 8 caracteres.");
-    if (senha !== conf) return setErro("As duas senhas não são iguais.");
+    if (!tamanhoOk || !iguais) return setErro(!tamanhoOk ? "Use pelo menos 8 caracteres." : "As duas senhas não são iguais.");
     setFase("salvando");
     const { error } = await createClient().auth.updateUser({ password: senha });
-    if (error) { setErro(error.message); setFase("pronto"); return; }
+    if (error) {
+      setErro(/different from the old/i.test(error.message) ? "Use uma senha diferente da anterior." : /weak|short/i.test(error.message) ? "Senha fraca. Misture letras e números." : error.message);
+      setFase("pronto");
+      return;
+    }
     router.replace("/os");
   };
 
-  const campo = "h-[44px] w-full rounded-lg border border-[#D0D5DD] bg-white px-3.5 text-[15px] outline-none focus:border-[#00A99D] focus:ring-4 focus:ring-[#00A99D]/15";
+  const campo = "h-11 w-full rounded-md border border-[#CDD3DB] bg-white px-3 text-[15px] text-[#0B1A2A] outline-none transition-colors focus:border-[#0B1A2A]";
+
   return (
-    <main className="os-root grid min-h-screen place-items-center px-4">
-      <div className="w-full max-w-[420px] rounded-2xl border border-[#EAECF0] bg-white p-8 shadow-[0_1px_3px_rgba(16,24,40,0.06),0_12px_32px_-12px_rgba(16,24,40,0.12)]">
-        <img src="/os/logo-seven.png" alt="seven" className="h-10" />
-        <h1 className="mt-6 text-[22px] font-semibold">Crie sua senha</h1>
-        {fase === "lendo" && <p className="mt-2 text-[14px] text-[#667085]">Abrindo o convite…</p>}
-        {fase === "invalido" && (
-          <>
-            <p role="alert" className="mt-3 rounded-lg bg-[#FEF3F2] px-4 py-3 text-[14px] text-[#B42318]">{erro}</p>
-            <a href="/login" className="mt-5 inline-block text-[14px] font-medium text-[#00756D] hover:underline">Ir para o login</a>
-          </>
-        )}
-        {(fase === "pronto" || fase === "salvando") && (
-          <form onSubmit={salvar} className="mt-2 space-y-4">
-            <p className="text-[14px] text-[#667085]">Acesso ao Seven OS para <span className="font-medium text-[#101828]">{email}</span>. Use esta senha nas próximas vezes que entrar.</p>
-            <label className="block"><span className="mb-1.5 block text-[13px] font-medium text-[#344054]">Senha nova</span><input type="password" autoComplete="new-password" autoFocus className={campo} value={senha} onChange={(e) => setSenha(e.target.value)} /></label>
-            <label className="block"><span className="mb-1.5 block text-[13px] font-medium text-[#344054]">Repita a senha</span><input type="password" autoComplete="new-password" className={campo} value={conf} onChange={(e) => setConf(e.target.value)} /></label>
-            {erro && <p role="alert" className="rounded-lg bg-[#FEF3F2] px-4 py-3 text-[14px] text-[#B42318]">{erro}</p>}
-            <button type="submit" disabled={fase === "salvando"} className="h-[44px] w-full rounded-lg bg-[#0B1A2A] text-[15px] font-medium text-white hover:bg-[#1E3550] disabled:opacity-50">{fase === "salvando" ? "Salvando…" : "Salvar e entrar no Seven OS"}</button>
-          </form>
-        )}
-      </div>
+    <div className="w-full max-w-[380px]">
+      <img src="/os/logo-seven.png" alt="Seven Suprimentos Industriais" className="mb-12 h-9 lg:hidden" />
+      {fase === "lendo" && <p className="text-[14px] text-[#5B6675]">Conferindo o link…</p>}
+
+      {fase === "invalido" && (
+        <>
+          <h1 className="text-[26px] font-semibold tracking-[-0.02em]">Link sem validade</h1>
+          <p className="mt-3 text-[15px] leading-relaxed text-[#5B6675]">{erro} Cada link funciona uma vez e por tempo limitado. Peça um novo a quem administra o Seven OS na Seven.</p>
+          <a href="/login" className="mt-8 inline-flex h-11 items-center rounded-md border border-[#CDD3DB] px-4 text-[14px] font-medium hover:border-[#0B1A2A]">Ir para o login</a>
+        </>
+      )}
+
+      {(fase === "pronto" || fase === "salvando") && (
+        <form onSubmit={salvar} noValidate>
+          <p className="text-[13px] font-medium uppercase tracking-[0.12em] text-[#00897F]">{esqueci ? "Nova senha" : "Primeiro acesso"}</p>
+          <h1 className="mt-2 text-[26px] font-semibold leading-tight tracking-[-0.02em]">{esqueci ? "Defina uma nova senha" : nome ? `${nome}, defina sua senha` : "Defina sua senha"}</h1>
+          <p className="mt-2 text-[15px] text-[#5B6675]">Login: <span className="text-[#0B1A2A]">{email}</span></p>
+
+          <label className="mt-8 block">
+            <span className="mb-1.5 block text-[13px] font-medium">Senha</span>
+            <span className="relative block">
+              <input type={ver ? "text" : "password"} autoComplete="new-password" autoFocus className={`${campo} pr-11`} value={senha} onChange={(e) => setSenha(e.target.value)} />
+              <button type="button" onClick={() => setVer((v) => !v)} className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-[#5B6675] hover:text-[#0B1A2A]" aria-label={ver ? "Esconder senha" : "Mostrar senha"}>
+                {ver ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
+              </button>
+            </span>
+          </label>
+          <label className="mt-4 block">
+            <span className="mb-1.5 block text-[13px] font-medium">Confirme a senha</span>
+            <input type={ver ? "text" : "password"} autoComplete="new-password" className={campo} value={conf} onChange={(e) => setConf(e.target.value)} />
+          </label>
+
+          <ul className="mt-4 space-y-1.5 text-[13px]">
+            {[[tamanhoOk, "Pelo menos 8 caracteres"], [iguais, "As duas senhas iguais"]].map(([ok, t]) => (
+              <li key={t as string} className={`flex items-center gap-2 ${ok ? "text-[#00897F]" : "text-[#8A94A3]"}`}>
+                <span className={`flex h-4 w-4 items-center justify-center rounded-full border ${ok ? "border-[#00A99D] bg-[#00A99D] text-white" : "border-[#CDD3DB]"}`}>{ok && <Check className="h-3 w-3" strokeWidth={3} />}</span>
+                {t as string}
+              </li>
+            ))}
+          </ul>
+
+          {erro && <p role="alert" className="mt-5 border-l-2 border-[#D92D20] pl-3 text-[14px] text-[#B42318]">{erro}</p>}
+
+          <button type="submit" disabled={fase === "salvando"} className="mt-8 h-11 w-full rounded-md bg-[#0B1A2A] text-[15px] font-medium text-white transition-colors hover:bg-[#16293F] disabled:opacity-60">
+            {fase === "salvando" ? "Salvando…" : "Salvar e entrar"}
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}
+
+export default function DefinirSenha() {
+  return (
+    <main className="os-root grid min-h-screen bg-white lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
+      <aside className="relative hidden overflow-hidden bg-[#0B1A2A] p-12 text-white lg:flex lg:flex-col">
+        <div aria-hidden className="pointer-events-none absolute inset-0 opacity-[0.07]" style={{ backgroundImage: "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)", backgroundSize: "48px 48px" }} />
+        <div aria-hidden className="pointer-events-none absolute -bottom-40 -left-24 h-[420px] w-[420px] rounded-full bg-[#00A99D] opacity-20 blur-[120px]" />
+        <img src="/os/logo-seven-branco.png" alt="Seven Suprimentos Industriais" className="relative h-10 w-auto self-start" />
+        <div className="relative mt-auto max-w-[420px]">
+          <p className="text-[13px] font-medium uppercase tracking-[0.14em] text-[#5FD3C9]">Seven OS</p>
+          <p className="mt-3 text-[28px] font-semibold leading-[1.2] tracking-[-0.02em]">Cotações da Vale, fornecedores e preços num lugar só.</p>
+          <p className="mt-4 text-[15px] leading-relaxed text-white/60">O robô traz os eventos do Coupa. A equipe identifica a peça, cota com o fornecedor e responde no prazo.</p>
+        </div>
+      </aside>
+      <section className="flex items-center justify-center px-6 py-12 sm:px-12">
+        <Suspense fallback={null}>
+          <Formulario />
+        </Suspense>
+      </section>
     </main>
   );
 }
