@@ -70,14 +70,14 @@ export default function OsLayout({ children }: { children: ReactNode }) {
     (async () => {
       const { data } = await supabase().auth.getSession();
       if (!data.session) {
-        router.replace("/login");
+        router.replace(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
         return;
       }
       try {
         setEu(await api<Eu>("/os/eu"));
       } catch (e) {
         const x = e as ErroApi;
-        if (x.status === 401) router.replace("/login");
+        if (x.status === 401) router.replace(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
         else setErro({ status: x.status, msg: x.message });
       }
     })();
@@ -86,7 +86,7 @@ export default function OsLayout({ children }: { children: ReactNode }) {
   const sair = async () => {
     limparMemoria();
     await supabase().auth.signOut();
-    router.replace("/login");
+    router.replace("/login?next=/os");
   };
 
   if (erro)

@@ -1,143 +1,127 @@
 "use client";
-
+/* eslint-disable @next/next/no-img-element */
+// Login do Seven OS (e da tela atual do robo). Sem cadastro aberto: contas sao criadas por convite no Admin.
+// Depois de entrar, volta para a pagina que pediu o login (?next=/os...) ou, sem isso, para a tela inicial.
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { Lock, Mail, ChevronRight, Loader2, UserPlus } from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
+import LayoutAcesso from "@/components/LayoutAcesso";
+
+type Modo = "entrar" | "esqueci" | "enviado";
+
+function destinoSeguro(v: string | null) {
+  return v && v.startsWith("/") && !v.startsWith("//") ? v : "/";
+}
+
+function traduzir(msg: string) {
+  if (/invalid login credentials/i.test(msg)) return "E-mail ou senha incorretos.";
+  if (/email not confirmed/i.test(msg)) return "Acesso ainda não ativado. Use o link do convite que você recebeu por e-mail.";
+  if (/rate limit|too many/i.test(msg)) return "Muitas tentativas seguidas. Aguarde alguns minutos e tente de novo.";
+  if (/fetch|network/i.test(msg)) return "Sem conexão com o servidor. Verifique a internet e tente de novo.";
+  return msg;
+}
 
 export default function Login() {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState("");
-    const router = useRouter();
-    const supabase = createClient();
+  const router = useRouter();
+  const [modo, setModo] = useState<Modo>("entrar");
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+  const [ver, setVer] = useState(false);
+  const [carregando, setCarregando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
 
-    const handleAuth = async (isSignUp: boolean) => {
-        setIsLoading(true);
-        setError("");
+  const entrar = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErro(null);
+    if (!email.trim() || !senha) return setErro("Informe e-mail e senha.");
+    setCarregando(true);
+    const { error } = await createClient().auth.signInWithPassword({ email: email.trim(), password: senha });
+    if (error) {
+      setErro(traduzir(error.message));
+      setCarregando(false);
+      return;
+    }
+    router.replace(destinoSeguro(new URLSearchParams(window.location.search).get("next")));
+  };
 
-        try {
-            if (isSignUp) {
-                const { error } = await supabase.auth.signUp({
-                    email,
-                    password,
-                });
-                if (error) throw error;
-                setError("Verifique seu e-mail para confirmar a conta! Ou se email confirmation estiver desativado, tente fazer login.");
-            } else {
-                const { error } = await supabase.auth.signInWithPassword({
-                    email,
-                    password,
-                });
-                if (error) throw error;
-                router.push("/");
-            }
-        } catch (err: unknown) {
-            const errorMessage = err instanceof Error ? err.message : "Ocorreu um erro ao autenticar.";
-            setError(errorMessage);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+  const pedirLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErro(null);
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setErro("Informe o e-mail do seu acesso.");
+    setCarregando(true);
+    const { error } = await createClient().auth.resetPasswordForEmail(email.trim(), { redirectTo: `${window.location.origin}/definir-senha` });
+    setCarregando(false);
+    // Mesmo retorno para e-mail cadastrado ou nao, para nao revelar quem tem acesso.
+    if (error && /rate limit|too many/i.test(error.message)) return setErro(traduzir(error.message));
+    setModo("enviado");
+  };
 
-    return (
-        <div className="min-h-screen relative flex items-center justify-center p-4 sm:p-8 font-sans overflow-hidden bg-slate-50">
-            {/* Background Orbs */}
-            <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-pink-300/40 rounded-full mix-blend-multiply filter blur-[120px] animate-blob"></div>
-            <div className="absolute top-[20%] right-[-10%] w-[40vw] h-[40vw] bg-indigo-300/40 rounded-full mix-blend-multiply filter blur-[100px] animate-blob animation-delay-2000"></div>
-            <div className="absolute bottom-[-10%] left-[20%] w-[60vw] h-[60vw] bg-emerald-300/30 rounded-full mix-blend-multiply filter blur-[120px] animate-blob animation-delay-4000"></div>
+  const campo = "h-11 w-full rounded-md border border-[#CDD3DB] bg-white px-3 text-[15px] text-[#0B1A2A] outline-none transition-colors focus:border-[#0B1A2A] disabled:bg-[#F6F8FA]";
+  const botao = "mt-8 h-11 w-full rounded-md bg-[#0B1A2A] text-[15px] font-medium text-white transition-colors hover:bg-[#16293F] disabled:opacity-60";
+  const link = "text-[14px] font-medium text-[#00897F] hover:text-[#0B1A2A]";
 
-            <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                transition={{ duration: 0.5, ease: "easeOut" }}
-                className="relative z-10 w-full max-w-[400px]"
-            >
-                <div className="bg-white/60 backdrop-blur-2xl border border-white/80 rounded-[2rem] p-8 sm:p-10 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)]">
-                    <div className="text-center mb-10">
-                        <h1 className="text-3xl font-extrabold tracking-tight text-slate-800 mb-2">Login</h1>
-                        <p className="text-slate-500 font-medium">Sevenbot Platform</p>
-                    </div>
+  return (
+    <LayoutAcesso>
+      <div className="w-full max-w-[380px]">
+        <img src="/os/logo-seven.png" alt="Seven Suprimentos Industriais" className="mb-12 h-9 lg:hidden" />
 
-                    <form onSubmit={(e) => { e.preventDefault(); handleAuth(false); }} className="space-y-5">
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-500 ml-1 uppercase tracking-wider">
-                                E-mail
-                            </label>
-                            <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <Mail className="h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-                                </div>
-                                <input
-                                    type="email"
-                                    required
-                                    placeholder="seu@email.com"
-                                    className="w-full bg-white/70 border border-slate-200/60 rounded-2xl pl-11 pr-5 py-4 text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500/50 transition-all shadow-inner group-hover:bg-white/90"
-                                    value={email}
-                                    disabled={isLoading}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                />
-                            </div>
-                        </div>
+        {modo === "entrar" && (
+          <form onSubmit={entrar} noValidate>
+            <p className="text-[13px] font-medium uppercase tracking-[0.12em] text-[#00897F]">Seven OS</p>
+            <h1 className="mt-2 text-[26px] font-semibold leading-tight tracking-[-0.02em]">Entrar</h1>
+            <p className="mt-2 text-[15px] text-[#5B6675]">Use o e-mail e a senha do seu acesso.</p>
 
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-500 ml-1 uppercase tracking-wider">
-                                Senha
-                            </label>
-                            <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <Lock className="h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-                                </div>
-                                <input
-                                    type="password"
-                                    required
-                                    placeholder="••••••••"
-                                    className="w-full bg-white/70 border border-slate-200/60 rounded-2xl pl-11 pr-5 py-4 text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500/50 transition-all shadow-inner group-hover:bg-white/90"
-                                    value={password}
-                                    disabled={isLoading}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                />
-                            </div>
-                        </div>
+            <label className="mt-8 block">
+              <span className="mb-1.5 block text-[13px] font-medium">E-mail</span>
+              <input type="email" autoComplete="username" autoFocus className={campo} value={email} disabled={carregando} onChange={(e) => setEmail(e.target.value)} />
+            </label>
+            <label className="mt-4 block">
+              <span className="mb-1.5 flex items-baseline justify-between">
+                <span className="text-[13px] font-medium">Senha</span>
+                <button type="button" onClick={() => { setModo("esqueci"); setErro(null); }} className="text-[13px] text-[#5B6675] hover:text-[#0B1A2A]">Esqueci minha senha</button>
+              </span>
+              <span className="relative block">
+                <input type={ver ? "text" : "password"} autoComplete="current-password" className={`${campo} pr-11`} value={senha} disabled={carregando} onChange={(e) => setSenha(e.target.value)} />
+                <button type="button" onClick={() => setVer((v) => !v)} className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-[#5B6675] hover:text-[#0B1A2A]" aria-label={ver ? "Esconder senha" : "Mostrar senha"}>
+                  {ver ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
+                </button>
+              </span>
+            </label>
 
-                        {error && (
-                            <p className="text-red-500 text-sm text-center font-medium mt-2 bg-red-50 p-2 rounded-lg border border-red-100">{error}</p>
-                        )}
+            {erro && <p role="alert" className="mt-5 border-l-2 border-[#D92D20] pl-3 text-[14px] text-[#B42318]">{erro}</p>}
 
-                        <div className="flex flex-col space-y-3 mt-6">
-                            <button
-                                type="submit"
-                                disabled={isLoading}
-                                className="w-full relative overflow-hidden rounded-2xl bg-slate-900 border border-slate-800 shadow-xl shadow-slate-900/20 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed group"
-                            >
-                                <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-emerald-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 mix-blend-overlay"></div>
-                                <div className="relative flex items-center justify-center space-x-2 px-6 py-4">
-                                    {isLoading ? (
-                                        <Loader2 className="w-5 h-5 text-white/90 animate-spin" />
-                                    ) : (
-                                        <>
-                                            <span className="text-white font-semibold tracking-wide">Entrar</span>
-                                            <ChevronRight className="w-5 h-5 text-white/70" />
-                                        </>
-                                    )}
-                                </div>
-                            </button>
+            <button type="submit" disabled={carregando} className={botao}>{carregando ? "Entrando…" : "Entrar"}</button>
+            <p className="mt-6 text-[13px] leading-relaxed text-[#8A94A3]">Não tem acesso? Peça a quem administra o Seven OS na Seven. O acesso é criado por convite.</p>
+          </form>
+        )}
 
-                            <button
-                                type="button"
-                                onClick={() => handleAuth(true)}
-                                disabled={isLoading}
-                                className="w-full flex items-center justify-center space-x-2 px-6 py-4 rounded-2xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all disabled:opacity-70 active:scale-95 shadow-sm"
-                            >
-                                <UserPlus className="w-5 h-5 text-slate-500" />
-                                <span className="font-semibold">Criar Conta Nova</span>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </motion.div>
-        </div>
-    );
+        {modo === "esqueci" && (
+          <form onSubmit={pedirLink} noValidate>
+            <p className="text-[13px] font-medium uppercase tracking-[0.12em] text-[#00897F]">Nova senha</p>
+            <h1 className="mt-2 text-[26px] font-semibold leading-tight tracking-[-0.02em]">Esqueceu a senha?</h1>
+            <p className="mt-2 text-[15px] leading-relaxed text-[#5B6675]">Informe o e-mail do seu acesso. Enviamos um link para você criar uma senha nova.</p>
+            <label className="mt-8 block">
+              <span className="mb-1.5 block text-[13px] font-medium">E-mail</span>
+              <input type="email" autoComplete="username" autoFocus className={campo} value={email} disabled={carregando} onChange={(e) => setEmail(e.target.value)} />
+            </label>
+            {erro && <p role="alert" className="mt-5 border-l-2 border-[#D92D20] pl-3 text-[14px] text-[#B42318]">{erro}</p>}
+            <button type="submit" disabled={carregando} className={botao}>{carregando ? "Enviando…" : "Enviar link"}</button>
+            <button type="button" onClick={() => { setModo("entrar"); setErro(null); }} className={`mt-6 ${link}`}>Voltar para o login</button>
+          </form>
+        )}
+
+        {modo === "enviado" && (
+          <div>
+            <p className="text-[13px] font-medium uppercase tracking-[0.12em] text-[#00897F]">Nova senha</p>
+            <h1 className="mt-2 text-[26px] font-semibold leading-tight tracking-[-0.02em]">Confira seu e-mail</h1>
+            <p className="mt-3 text-[15px] leading-relaxed text-[#5B6675]">
+              Se <span className="text-[#0B1A2A]">{email.trim()}</span> tiver acesso ao Seven OS, você vai receber um link para criar uma senha nova. O link vale uma vez e por tempo limitado. Olhe também a caixa de spam.
+            </p>
+            <button type="button" onClick={() => { setModo("entrar"); setSenha(""); }} className={`mt-8 ${link}`}>Voltar para o login</button>
+          </div>
+        )}
+      </div>
+    </LayoutAcesso>
+  );
 }
