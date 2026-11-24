@@ -87,7 +87,7 @@ function Assistente() {
               <div key={i} className="flex gap-3">
                 <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#DDF3F1] text-[11px] font-bold text-[#00665F]" aria-hidden>S7</span>
                 <div className="min-w-0 max-w-[92%]">
-                  <div className="rounded-2xl rounded-tl-md bg-[#F2F4F7] px-4 py-2.5 text-[14px]">{m.texto}</div>
+                  <div className="rounded-2xl rounded-tl-md bg-[#F2F4F7] px-4 py-2.5 text-[14px] whitespace-pre-line">{m.texto}</div>
                   {m.tabela && (
                     <div className="mt-2 overflow-x-auto rounded-lg border border-[#EAECF0]">
                       <table className="w-full border-collapse">
