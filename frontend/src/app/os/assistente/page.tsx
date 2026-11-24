@@ -72,7 +72,7 @@ function Assistente() {
         <div className="flex min-w-0 flex-col">
           <div className="border-b border-[#F0F2F5] px-5 py-4">
             <div className="truncate text-[16px] font-bold">{titulo}</div>
-            <div className="text-[12px] text-[#667085]">Respostas montadas pelo sistema com os dados registrados</div>
+            <div className="text-[12px] text-[#667085]">Assistente com IA, consulta os dados do sistema conforme o seu perfil</div>
           </div>
           <div className="flex-1 space-y-4 overflow-y-auto px-5 py-5" aria-live="polite">
             {msgs.length === 0 && (
@@ -112,7 +112,7 @@ function Assistente() {
               <input aria-label="Pergunta" className={`${campoCls} h-[44px]`} maxLength={500} placeholder="Pergunte sobre produto, fornecedor, preço ou prazo…" value={texto} onChange={(e) => setTexto(e.target.value)} />
               <button type="submit" disabled={acao.ocupado || !texto.trim()} className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-lg bg-[#0B1A2A] text-white disabled:opacity-40" aria-label="Enviar"><Send className="h-4 w-4" /></button>
             </div>
-            <p className="mt-2 text-[12px] text-[#667085]">O assistente só responde com dados registrados no sistema. Quando não tem o dado, diz que não tem. Nesta versão ele entende uma lista fechada de perguntas, sem modelo de IA.</p>
+            <p className="mt-2 text-[12px] text-[#667085]">O assistente usa IA e só lê dados registrados no sistema, conforme o seu perfil. Quando não encontra o dado, diz que não tem. Ele não altera nada.</p>
           </form>
         </div>
       </div>
