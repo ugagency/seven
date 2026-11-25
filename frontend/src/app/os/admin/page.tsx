@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import GerenciadorCredenciais from "../../GerenciadorCredenciais";
-import { Aviso, Botao, Campo, Cartao, Etiqueta, Estado, PERFIS, Titulo, api, baixar, campoCls, supabase, td, th, useAcao, useApi, useEu, type J } from "../_lib";
+import { Aviso, Botao, Campo, Cartao, Etiqueta, Estado, PERFIS, Titulo, api, baixar, campoCls, enviarArquivo, supabase, td, th, useAcao, useApi, useEu, type J } from "../_lib";
 
 const ROBO = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
@@ -199,7 +199,51 @@ function Exportar() {
   );
 }
 
-const ABAS_ADMIN: [string, string, () => React.ReactElement][] = [["usuarios", "Usuários", Usuarios], ["contas", "Contas e credenciais", Contas], ["parametros", "Parâmetros", Parametros], ["exportar", "Exportar base", Exportar]];
+type ResultadoCarga = { arquivo: string; linhas: number; substituidas: number; com_produto: number; sem_produto: number; produtos_novos: number;
+  com_preco_compra: number; declinadas: number; ganhas: number; fornecedores_novos: number; vinculos_novos: number; periodo: [string, string] | null };
+
+function ImportarBase() {
+  const eu = useEu();
+  const acao = useAcao();
+  const [arquivo, setArquivo] = useState<File | null>(null);
+  const [res, setRes] = useState<ResultadoCarga | null>(null);
+  const br = (d: string) => d.split("-").reverse().join("/");
+  const n = (x: number) => x.toLocaleString("pt-BR");
+  return (
+    <Cartao titulo="Base histórica da Seven">
+      <p className="text-[14px] text-[#344054]">
+        Carrega a planilha BASE.xlsx (aba BASE e, se houver, a aba COD E PV com os pedidos ganhos). Cada linha vira histórico do produto, com
+        fornecedor, preços e situação. Fornecedores que deram preço entram no cadastro e ficam ligados à peça. Carregar a mesma planilha de novo
+        atualiza as linhas, sem duplicar. Os preços ficam visíveis só para os perfis que podem ver preço.
+      </p>
+      {eu.perfil !== "administrador" ? <div className="mt-3"><Aviso tom="alerta">Só o perfil Administrador carrega a base da Seven.</Aviso></div> : (
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <input type="file" accept=".xlsx,.xlsm" disabled={acao.ocupado} onChange={(e) => { setArquivo(e.target.files?.[0] || null); setRes(null); }}
+            className="text-[14px] file:mr-3 file:rounded-md file:border file:border-[#D0D5DD] file:bg-white file:px-3 file:py-1.5 file:text-[14px] file:font-medium hover:file:border-[#0B1A2A]" />
+          <Botao variante="primario" disabled={!arquivo || acao.ocupado}
+            onClick={() => acao.rodar(async () => { setRes(await enviarArquivo<ResultadoCarga>("/os/admin/importar-base", arquivo!)); })}>
+            {acao.ocupado ? "Carregando… (pode levar até 1 minuto)" : "Carregar planilha"}
+          </Botao>
+        </div>
+      )}
+      {acao.erro && <div className="mt-3"><Aviso tom="ruim">{acao.erro}</Aviso></div>}
+      {res && (
+        <div className="mt-4">
+          <Aviso tom="bom">{res.arquivo}: {n(res.linhas)} linhas carregadas{res.periodo ? `, de ${br(res.periodo[0])} a ${br(res.periodo[1])}` : ""}.{res.substituidas ? ` ${n(res.substituidas)} já existiam e foram atualizadas.` : ""}</Aviso>
+          <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 text-[14px] sm:grid-cols-3">
+            {([["Ligadas a um produto", res.com_produto], ["Sem produto (descrição insuficiente)", res.sem_produto], ["Produtos novos criados", res.produtos_novos],
+               ["Com preço de compra", res.com_preco_compra], ["Declinadas", res.declinadas], ["Ganhas (com pedido)", res.ganhas],
+               ["Fornecedores novos", res.fornecedores_novos], ["Vínculos peça e fornecedor", res.vinculos_novos]] as [string, number][]).map(([t, v]) => (
+              <div key={t}><dt className="text-[#667085]">{t}</dt><dd className="mono text-[15px] font-medium text-[#0B1A2A]">{n(v)}</dd></div>
+            ))}
+          </dl>
+        </div>
+      )}
+    </Cartao>
+  );
+}
+
+const ABAS_ADMIN: [string, string, () => React.ReactElement][] = [["usuarios", "Usuários", Usuarios], ["contas", "Contas e credenciais", Contas], ["parametros", "Parâmetros", Parametros], ["importar", "Base da Seven", ImportarBase], ["exportar", "Exportar base", Exportar]];
 
 export default function Admin() {
   const eu = useEu();

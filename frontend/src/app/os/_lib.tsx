@@ -61,6 +61,26 @@ export async function api<T = any>(caminho: string, opcoes: { metodo?: string; c
   return (await chamar(caminho, opcoes)).json();
 }
 
+export async function enviarArquivo<T = any>(caminho: string, arquivo: File, campo = "arquivo"): Promise<T> {
+  const fd = new FormData();
+  fd.append(campo, arquivo);
+  let r: Response;
+  try {
+    r = await fetch(url(caminho), { method: "POST", headers: { Authorization: `Bearer ${await token()}` }, body: fd });
+  } catch {
+    throw new ErroApi(0, "Não foi possível falar com o servidor do Seven OS.");
+  }
+  if (!r.ok) {
+    let msg = `Erro ${r.status}`;
+    try {
+      const d = await r.json();
+      if (typeof d.detail === "string") msg = d.detail;
+    } catch {}
+    throw new ErroApi(r.status, msg);
+  }
+  return r.json();
+}
+
 export async function baixar(caminho: string, opcoes: { metodo?: string; params?: J } = {}, nomePadrao = "arquivo") {
   const r = await chamar(caminho, opcoes);
   const nome = /filename="([^"]+)"/.exec(r.headers.get("Content-Disposition") || "")?.[1] || nomePadrao;
