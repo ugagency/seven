@@ -19,7 +19,7 @@ function Caso({ p, feito }: { p: J; feito: () => void }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="font-medium text-[#0B1A2A]">{p.nome}</div>
-          <p className="mt-1 text-[14px] leading-relaxed text-[#344054]">{p.descricao || "Sem descrição na captura."}</p>
+          <p className="mt-1 break-words text-[14px] leading-relaxed text-[#344054] [overflow-wrap:anywhere]">{p.descricao || "Sem descrição na captura."}</p>
           <div className="mt-2 flex flex-wrap gap-1">
             {(p.codigos || []).map((c: string) => <Etiqueta key={c}>cód. {c}</Etiqueta>)}
             <Etiqueta tom="alerta">{fmtNum(p.abertos)} item(ns) aberto(s)</Etiqueta>

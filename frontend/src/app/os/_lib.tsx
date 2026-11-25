@@ -138,7 +138,7 @@ export const PERFIS: Record<string, string> = { administrador: "Administrador", 
 // ---------- formatos ----------
 export const fmtData = (v?: string | null) => (v ? new Date(v.length <= 10 ? v + "T12:00:00" : v).toLocaleDateString("pt-BR") : "");
 export const fmtDataHora = (v?: string | null) => (v ? new Date(v).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "");
-export const fmtNum = (v?: number | null, casas = 0) => (v === null || v === undefined ? "" : v.toLocaleString("pt-BR", { minimumFractionDigits: casas, maximumFractionDigits: Math.max(casas, 3) }));
+export const fmtNum = (v?: number | null, casas = 0) => (v === null || v === undefined ? "" : v.toLocaleString("pt-BR", { minimumFractionDigits: casas, maximumFractionDigits: casas === 0 ? 3 : casas }));
 export const fmtReais = (v?: number | null) => (v === null || v === undefined ? "" : v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }));
 export function diasAte(prazo?: string | null) {
   if (!prazo) return null;

@@ -214,6 +214,7 @@ export default function Ficha() {
                     <Campo rotulo="Assunto"><input className={campoCls} value={email.assunto} onChange={(e) => setEmail({ ...email, assunto: e.target.value })} /></Campo>
                     <Campo rotulo="Mensagem" dica="O envio é bloqueado se o texto tiver qualquer valor em reais ou preço de compra registrado."><textarea rows={10} className={`${campoCls} mono text-[13px]`} value={email.texto} onChange={(e) => setEmail({ ...email, texto: e.target.value })} /></Campo>
                     {!email.para && <Aviso tom="alerta">Este fornecedor não tem e-mail cadastrado. O programa de e-mail vai abrir sem destinatário.</Aviso>}
+                    {acao.erro && <Aviso tom="ruim">{acao.erro}</Aviso>}
                     <div className="flex gap-2">
                       <Botao variante="primario" disabled={acao.ocupado} onClick={registrarEmail}>Registrar e abrir no meu e-mail</Botao>
                       <Botao onClick={() => setEmail(null)}>Cancelar</Botao>
