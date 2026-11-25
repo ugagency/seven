@@ -14,6 +14,8 @@ const ALERTAS: Record<string, string> = {
 const ORIGENS: Record<string, string> = { historia: "já cotou este produto", marca: "atende a marca", busca: "busca", equipe: "indicado pela equipe" };
 const numero = (t: string) => (t.trim() === "" ? null : Number(t.replace(/\./g, "").replace(",", ".")));
 
+const STATUS_BASE: Record<string, string> = { ganha: "Ganha", cotada: "Cotada", declinada: "Declinada", sem_preco: "Sem preço" };
+
 function Valores({ v }: { v: J }) {
   const partes = [
     "preco_compra" in v && ["Compra", fmtReais(v.preco_compra)],
@@ -21,6 +23,7 @@ function Valores({ v }: { v: J }) {
     "frete" in v && v.frete != null && ["Frete", fmtReais(v.frete)],
     "preco_venda" in v && ["Venda", fmtReais(v.preco_venda)],
     "margem_pct" in v && v.margem_pct != null && ["Margem", `${fmtNum(v.margem_pct, 1)}%`],
+    "margem_final" in v && v.margem_final != null && ["Margem final", `${fmtNum(v.margem_final, 2)}%`],
   ].filter(Boolean) as string[][];
   if (!partes.length) return <span className="text-[#98A2B3]">valores não visíveis para o seu perfil</span>;
   return (
@@ -242,10 +245,16 @@ export default function Ficha() {
                     {d.historico_importado.map((h: J, i: number) => (
                       <tr key={`h${i}`} className="border-b border-[#F0F2F5] last:border-0">
                         <td className={`${td} tabular-nums`}>{fmtData(h.data_ref)}</td>
-                        <td className={td}><Etiqueta>base da Seven</Etiqueta></td>
+                        <td className={td}>
+                          {h.evento ? <span className="mono text-[13px] font-medium">{h.evento}</span> : null} <Etiqueta>base da Seven</Etiqueta>
+                          {h.quantidade != null && <div className="text-[12px] text-[#667085]">{fmtNum(h.quantidade)} {unidade}</div>}
+                        </td>
                         <td className={td}>{h.fornecedor_texto || "–"}</td>
                         <td className={td}><Valores v={h.valores} /></td>
-                        <td className={td}>{h.status || "–"}</td>
+                        <td className={td}>
+                          <Etiqueta tom={h.status === "ganha" ? "bom" : h.status === "declinada" ? "ruim" : undefined}>{STATUS_BASE[h.status] || h.status || "–"}</Etiqueta>
+                          {h.pedido_venda && <div className="mt-1 text-[12px] text-[#667085]">PV {h.pedido_venda}</div>}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
