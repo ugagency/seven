@@ -216,7 +216,7 @@ function ImportarBase() {
         fornecedor, preços e situação. Fornecedores que deram preço entram no cadastro e ficam ligados à peça. Carregar a mesma planilha de novo
         atualiza as linhas, sem duplicar. Os preços ficam visíveis só para os perfis que podem ver preço.
       </p>
-      {eu.perfil !== "administrador" ? <div className="mt-3"><Aviso tom="alerta">Só o perfil Administrador carrega a base da Seven.</Aviso></div> : (
+      {!["administrador", "suporte"].includes(eu.perfil) ? <div className="mt-3"><Aviso tom="alerta">Só o Administrador ou o Suporte SSYS carrega a base da Seven.</Aviso></div> : (
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <input type="file" accept=".xlsx,.xlsm" disabled={acao.ocupado} onChange={(e) => { setArquivo(e.target.files?.[0] || null); setRes(null); }}
             className="text-[14px] file:mr-3 file:rounded-md file:border file:border-[#D0D5DD] file:bg-white file:px-3 file:py-1.5 file:text-[14px] file:font-medium hover:file:border-[#0B1A2A]" />
